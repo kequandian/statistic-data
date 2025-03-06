@@ -23,7 +23,7 @@ import javax.annotation.Resource;
 @Deprecated //原则上无需单独获取域数据
 @Api("统计 [Statistics]")
 @RestController
-@RequestMapping("/api/stat/fields")
+@RequestMapping("/api/adm/stat/fields")
 public class StatisticsFieldEndpoint{
 
     @Resource

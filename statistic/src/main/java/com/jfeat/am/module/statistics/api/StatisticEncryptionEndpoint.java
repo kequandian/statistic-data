@@ -1,7 +1,6 @@
 package com.jfeat.am.module.statistics.api;
 
 import com.jfeat.am.module.statistics.services.crud.ExtendedStatistics;
-import com.jfeat.am.module.statistics.services.crud.impl.ExtendedStatisticsImpl;
 import com.jfeat.am.module.statistics.util.SimpleEncryptionUtil;
 import com.jfeat.crud.base.tips.SuccessTip;
 import com.jfeat.crud.base.tips.Tip;
@@ -15,8 +14,8 @@ import javax.annotation.Resource;
 
 @Api("加密接口测试")
 @RestController
-@RequestMapping("/api/u/encryption")
-public class encryptionEndpoint {
+@RequestMapping("/api/adm/stat/encryption")
+public class StatisticEncryptionEndpoint {
 
     @Resource
     ExtendedStatistics extendedStatistics;

@@ -24,7 +24,7 @@ import javax.annotation.Resource;
  */
 @Api("统计 [Statistics]")
 @RestController
-@RequestMapping("/api/adm/stat/fields")
+@RequestMapping("/api/cfg/stat/fields")
 public class MaintenanceFieldEndpoint{
 
     @Resource

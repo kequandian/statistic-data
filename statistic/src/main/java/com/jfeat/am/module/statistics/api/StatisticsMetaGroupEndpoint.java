@@ -51,7 +51,7 @@ import java.util.Date;
 @RestController
 
 @Api("StatisticsMetaGroup")
-@RequestMapping("/api/crud/statisticsMetaGroup/statisticsMetaGroups")
+@RequestMapping("/api/adm/statisticsMetaGroup/statisticsMetaGroups")
 public class StatisticsMetaGroupEndpoint {
 
     @Resource

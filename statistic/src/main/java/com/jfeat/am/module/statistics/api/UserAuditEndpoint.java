@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.annotation.Resource;
 
-@RequestMapping("/userAudit")
+@RequestMapping("/api/stat/user/audit")
 public class UserAuditEndpoint {
     @Resource
     ExtendedStatistics extendedStatistics;

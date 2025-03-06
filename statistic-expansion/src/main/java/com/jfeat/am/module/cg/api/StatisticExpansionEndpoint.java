@@ -32,7 +32,7 @@ import javax.annotation.Resource;
 @RestController
 
 @Api("StatisticExpansion")
-@RequestMapping("/api/crud/statisticExpansion")
+@RequestMapping("/api/adm/stat/expansion")
 public class StatisticExpansionEndpoint {
 
     @Resource

@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
  */
 @Api("统计 [Statistics]")
 @RestController
-@RequestMapping("/api/stat/groups")
+@RequestMapping("/api/adm/stat/groups")
 public class StatisticsGroupEndpoint{
     @Resource
     StatisticsGroupService statisticsGroupService;

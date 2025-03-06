@@ -1,4 +1,4 @@
-package com.jfeat.am.module.statistics.api.app;
+package com.jfeat.am.module.statistics.api;
 
 //import com.jfeat.am.module.log.annotation.BusinessLog;
 
@@ -6,12 +6,10 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jfeat.am.common.annotation.UrlPermission;
-import com.jfeat.am.core.jwt.JWTKit;
 import com.jfeat.am.module.statistics.api.model.GenWebSetting;
 import com.jfeat.am.module.statistics.api.model.MetaTag;
 import com.jfeat.am.module.statistics.services.crud.ExtendedStatistics;
 import com.jfeat.am.module.statistics.services.crud.StatisticsMetaService;
-import com.jfeat.am.module.statistics.services.crud.model.ReportCode;
 import com.jfeat.am.module.statistics.services.domain.dao.QueryStatisticsMetaDao;
 import com.jfeat.am.module.statistics.services.domain.model.StatisticsMetaRecord;
 import com.jfeat.am.module.statistics.services.domain.service.StatisticsMetaGroupService;
@@ -19,7 +17,6 @@ import com.jfeat.am.module.statistics.services.gen.persistence.dao.StatisticsMet
 import com.jfeat.am.module.statistics.services.gen.persistence.model.StatisticsMeta;
 import com.jfeat.am.module.statistics.util.GenCodeUtil;
 import com.jfeat.am.module.statistics.util.MetaUtil;
-import com.jfeat.am.module.statistics.util.SimpleEncryptionUtil;
 import com.jfeat.crud.base.annotation.BusinessLog;
 import com.jfeat.crud.base.exception.BusinessCode;
 import com.jfeat.crud.base.exception.BusinessException;
@@ -33,12 +30,15 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.io.File;
 import java.util.List;
+
+import static com.jfeat.am.module.statistics.util.GenCodeUtil.DEFAULT_WEB_PAGE;
 
 @Api("统计 [Statistics] meta")
 @RestController
-@RequestMapping("/api/u/stat/meta")
-public class MetaAppEndpoint {
+@RequestMapping("/api/adm/stat/meta")
+public class StatisticsMetaEndpoing {
 
     @Resource
     StatisticsMetaService statisticsMetaService;
@@ -53,41 +53,16 @@ public class MetaAppEndpoint {
     @Resource
     GenWebSetting genWebSetting;
 
-    //根据报表生成 口令
-    @PostMapping("/genCode")
-    public Tip genCode(@RequestBody ReportCode reportCode){
-        String code = extendedStatistics.genCode(reportCode);
-        return SuccessTip.create(code);
-    }
-
-    //根据口令获取报表
-    @GetMapping("/getReportByCode")
-    public Tip getReportByCode(@RequestParam(name = "code",required = true)String code ,
-                               @RequestParam(name = "pageNum", required = false, defaultValue = "1") Long current,
-                               @RequestParam(name = "pageSize", required = false, defaultValue = "10") Long size){
-        String decrypt = SimpleEncryptionUtil.decrypt(code, 3);
-        ReportCode reportCode = new ReportCode(decrypt);
-        MetaTag metaTag = new MetaTag();
-        metaTag.setCurrent(current);
-        metaTag.setSize(size);
-        //记录
-        extendedStatistics.recordHistory(reportCode.getFiled(),reportCode.getAppid());
-        JSONObject reportByCode = extendedStatistics.getReportByCode(reportCode, metaTag);
-        return SuccessTip.create(reportByCode);
-    }
 
     @ApiOperation("根据字段获取报表")
     @GetMapping("/{field}")
     public Tip getConfigList(@PathVariable String field,
-                             @RequestParam(name = "appid" ,required = false)String appid,
                              @RequestParam(name = "pageNum", required = false, defaultValue = "1") Long current,
                              @RequestParam(name = "pageSize", required = false, defaultValue = "10") Long size
     ) {
         MetaTag metaTag = new MetaTag();
         metaTag.setCurrent(current);
         metaTag.setSize(size);
-
-        extendedStatistics.recordHistory(field,appid);
         JSONObject data = extendedStatistics.getJSONByField(field, metaTag);
         return SuccessTip.create(data);
     }
@@ -109,6 +84,23 @@ public class MetaAppEndpoint {
     }
 
 
+    @BusinessLog(name = "StatisticsMeta", value = "create StatisticsMeta")
+    @PostMapping
+    @ApiOperation(value = "新建 StatisticsMeta", response = StatisticsMeta.class)
+    public Tip createStatisticsMeta(@RequestBody StatisticsMetaRecord entity) {
+
+        Integer affected = 0;
+        try {
+            //类型进行映射
+            entity.setType(MetaUtil.replaceType(entity.getType()));
+            affected = statisticsMetaService.createMaster(entity);
+
+        } catch (DuplicateKeyException e) {
+            throw new BusinessException(BusinessCode.DuplicateKey);
+        }
+
+        return SuccessTip.create(affected);
+    }
 
     @BusinessLog(name = "StatisticsMeta", value = "查看 StatisticsMeta")
     @GetMapping("/getOne/{id}")
@@ -140,7 +132,7 @@ public class MetaAppEndpoint {
 
     @BusinessLog(name = "StatisticsMeta", value = "查询列表 StatisticsMeta")
     @ApiOperation(value = "StatisticsMeta 列表信息", response = StatisticsMetaRecord.class)
-    @GetMapping("")
+    @GetMapping
     @ApiImplicitParams({
             @ApiImplicitParam(name = "pageNum", dataType = "Integer"),
             @ApiImplicitParam(name = "pageSize", dataType = "Integer"),
@@ -185,9 +177,6 @@ public class MetaAppEndpoint {
         page.setCurrent(pageNum);
         page.setSize(pageSize);
 
-        Integer userType = JWTKit.getUserType() == null? 0:JWTKit.getUserType();
-
-
         StatisticsMetaRecord record = new StatisticsMetaRecord();
         record.setId(id);
         record.setField(field);
@@ -197,7 +186,7 @@ public class MetaAppEndpoint {
         record.setTitle(title);
         record.setType(type);
         record.setPermission(permission);
-        List<StatisticsMetaRecord> result = queryStatisticsMetaDao.findStatisticsMetaPage(page, record, search, orderBy, null, null,userType);
+        List<StatisticsMetaRecord> result = queryStatisticsMetaDao.findStatisticsMetaPage(page, record, search, orderBy, null, null,null);
         for (StatisticsMetaRecord resu : result) {
             //类型进行映射
             resu.setChinceseType(MetaUtil.transientType(resu.getType()));

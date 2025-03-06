@@ -20,7 +20,7 @@ import javax.annotation.Resource;
  */
 @Api("统计 [Statistics]")
 @RestController
-@RequestMapping("/api/adm/stat/groups")
+@RequestMapping("/api/cfg/stat/groups")
 public class MaintenanceGroupEndpoint{
 
     @Resource

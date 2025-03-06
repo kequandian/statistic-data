@@ -2,8 +2,6 @@ package com.jfeat.am.module.statistics.api;
 
 
 import com.jfeat.crud.base.annotation.BusinessLog;
-import com.jfeat.crud.plus.META;
-import com.jfeat.am.core.jwt.JWTKit;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -21,15 +19,11 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.dao.DuplicateKeyException;
 import com.jfeat.am.module.statistics.services.domain.dao.QueryStatisticsUsedHistoryDao;
 import com.jfeat.crud.base.tips.SuccessTip;
-import com.jfeat.crud.base.request.Ids;
 import com.jfeat.crud.base.tips.Tip;
 import com.jfeat.crud.base.exception.BusinessCode;
 import com.jfeat.crud.base.exception.BusinessException;
-import com.jfeat.crud.plus.CRUDObject;
 import com.jfeat.am.module.statistics.api.permission.*;
 import com.jfeat.am.common.annotation.Permission;
-
-import java.math.BigDecimal;
 
 import com.jfeat.am.module.statistics.services.domain.service.*;
 import com.jfeat.am.module.statistics.services.domain.model.StatisticsUsedHistoryRecord;
@@ -40,8 +34,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
-
-import com.alibaba.fastjson.JSONArray;
 
 /**
  * <p>
@@ -54,7 +46,7 @@ import com.alibaba.fastjson.JSONArray;
 @RestController
 
 @Api("StatisticsUsedHistory")
-@RequestMapping("/api/crud/statisticsUsedHistory/statisticsUsedHistoryies")
+@RequestMapping("/api/adm/statisticsUsedHistory/statisticsUsedHistoryies")
 public class StatisticsUsedHistoryEndpoint {
 
     @Resource

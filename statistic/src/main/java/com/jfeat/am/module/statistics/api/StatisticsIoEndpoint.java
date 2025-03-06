@@ -28,10 +28,10 @@ import java.util.*;
  */
 @Api("统计 [Statistics] 导入导出")
 @RestController
-@RequestMapping("/api/io/")
-public class IoEndpoint {
+@RequestMapping("/api/adm/stat/io")
+public class StatisticsIoEndpoint {
 
-    protected final static Logger logger = LoggerFactory.getLogger(IoEndpoint.class);
+    protected final static Logger logger = LoggerFactory.getLogger(StatisticsIoEndpoint.class);
 
     private static final String API_PREFIX = "/api/adm/stat/meta";
 
