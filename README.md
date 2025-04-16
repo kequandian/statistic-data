@@ -1,5 +1,3 @@
-# Deprecated, moved to smallsaas/statistic-data
-
 ## 自动报表配置说明
 [自动报表模块说明](./statistic/README.md)
 
