@@ -195,7 +195,7 @@ public class StatisticsField extends Model<StatisticsField> {
 	public static final String ATTR_INDEX = "attr_index";
 
 	@Override
-	protected Serializable pkVal() {
+	public Serializable pkVal() {
 		return this.id;
 	}
 

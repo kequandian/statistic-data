@@ -1,14 +1,11 @@
 package com.jfeat.am;
 
-import com.jfeat.am.config.properties.AmProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * SpringBoot方式启动类
@@ -18,12 +15,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
  */
 @SpringBootApplication
 @EnableScheduling
-public class AmApplication extends WebMvcConfigurerAdapter{
+public class AmApplication implements WebMvcConfigurer {
 
     protected final static Logger logger = LoggerFactory.getLogger(AmApplication.class);
-
-    @Autowired
-    AmProperties amProperties;
 
 
     public static void main(String[] args) {

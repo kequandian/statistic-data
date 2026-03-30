@@ -1,6 +1,6 @@
 package com.jfeat.am.module.statistics.api.template;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.jfeat.am.module.statistics.api.model.TemplateChildren;
 import com.jfeat.am.module.statistics.api.model.MetaGroupTemplate;
 

@@ -10,7 +10,7 @@ import com.jfeat.crud.base.exception.BusinessException;
 import com.jfeat.crud.plus.impl.CRUDServiceGroupImpl;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 
 /**

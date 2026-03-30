@@ -1,7 +1,6 @@
 package com.jfeat.am.module.statistic.mq;
 
-import com.jfeat.am.core.support.StrKit;
-import com.jfeat.am.core.util.JsonKit;
+import com.alibaba.fastjson2.JSON;
 import com.jfeat.am.module.statistics.services.notify.StatisticNotifyData;
 import com.jfeat.am.module.statistics.services.notify.StatisticsNotifyService;
 import org.slf4j.Logger;
@@ -10,8 +9,9 @@ import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * Created by Silent-Y on 2017/8/31.
@@ -29,11 +29,11 @@ public class StatisticNotifyReceiver {
     public void process(@Payload String message) {
         logger.info("Receiver : " + message);
 
-        if (StrKit.isBlank(message)) {
+        if (!StringUtils.hasText(message)) {
             return;
         }
 
-        StatisticNotifyData memberAnalysisNotifyData = JsonKit.parseObject(message, StatisticNotifyData.class);
+        StatisticNotifyData memberAnalysisNotifyData = JSON.parseObject(message, StatisticNotifyData.class);
         statisticsNotifyService.insertStatisticRecord(memberAnalysisNotifyData);
     }
 }

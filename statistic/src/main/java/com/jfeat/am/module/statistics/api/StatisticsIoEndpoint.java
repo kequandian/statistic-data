@@ -1,7 +1,8 @@
 package com.jfeat.am.module.statistics.api;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSON;
 import com.jfeat.common.HttpUtil;
 import com.jfeat.poi.agent.PoiAgentExporter;
 import io.swagger.annotations.Api;
@@ -14,8 +15,8 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -64,7 +65,8 @@ public class StatisticsIoEndpoint {
         apiPath = processPageSize(apiPath, authorization);
 
         // 访问api 获取数据
-        JSONObject data = HttpUtil.getResponse(apiPath, authorization).getJSONObject("data");
+        com.alibaba.fastjson.JSONObject oldData = HttpUtil.getResponse(apiPath, authorization).getJSONObject("data");
+        JSONObject data = JSON.parseObject(oldData.toJSONString());
         // header
         List<String> header = data.getJSONArray("header").toJavaList(String.class);
         // rows jsonArray
@@ -110,7 +112,8 @@ public class StatisticsIoEndpoint {
     }
 
     private String processPageSize(String apiPath, String authorization) {
-        JSONObject data = HttpUtil.getResponse(apiPath, authorization).getJSONObject("data");
+        com.alibaba.fastjson.JSONObject oldData = HttpUtil.getResponse(apiPath, authorization).getJSONObject("data");
+        JSONObject data = JSON.parseObject(oldData.toJSONString());
         String total = data.getString("total");
         // apiPath = HttpUtil.setQueryParam(apiPath,"pageNum", "1");
         return HttpUtil.setQueryParam(apiPath, "pageSize", total);

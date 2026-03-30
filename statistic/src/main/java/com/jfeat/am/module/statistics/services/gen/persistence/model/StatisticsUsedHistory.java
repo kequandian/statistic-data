@@ -127,7 +127,7 @@ public class StatisticsUsedHistory extends Model<StatisticsUsedHistory> {
       public static final String COME_FORM_TYPE = "come_form_type";
 
       @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
           return this.id;
       }
 

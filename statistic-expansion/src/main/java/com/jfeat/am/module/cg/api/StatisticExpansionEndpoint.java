@@ -19,7 +19,7 @@ import com.jfeat.crud.base.exception.BusinessCode;
 import com.jfeat.crud.base.exception.BusinessException;
 import com.jfeat.am.module.cg.api.permission.*;
 import com.jfeat.am.common.annotation.Permission;
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * <p>

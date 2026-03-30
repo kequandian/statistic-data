@@ -9,7 +9,7 @@ import com.jfeat.am.module.statistics.services.crud.StatisticsGroupByService;
 import com.jfeat.crud.plus.impl.CRUDServiceGroupByImpl;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * <p>

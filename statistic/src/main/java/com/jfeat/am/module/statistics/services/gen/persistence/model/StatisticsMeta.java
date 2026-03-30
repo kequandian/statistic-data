@@ -260,7 +260,7 @@ public class StatisticsMeta extends Model<StatisticsMeta> {
 	public static final String PERMISSION = "permission";
 
 	@Override
-	protected Serializable pkVal() {
+	public Serializable pkVal() {
 		return this.id;
 	}
 

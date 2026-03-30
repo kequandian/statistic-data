@@ -1,6 +1,6 @@
 package com.jfeat.am.module.statistics.services.crud.filter;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.jfeat.am.module.statistics.services.persistence.model.StatisticsField;
 import com.jfeat.crud.plus.CRUDFilterResult;
 

@@ -1,6 +1,6 @@
 package com.jfeat.am.module.statistics.api.model;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 
 import java.util.List;
 

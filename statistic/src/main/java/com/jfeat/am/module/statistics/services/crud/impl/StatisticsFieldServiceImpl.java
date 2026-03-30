@@ -18,7 +18,7 @@ import com.jfeat.crud.plus.CRUDFilter;
 import com.jfeat.crud.plus.impl.CRUDServiceOnlyImpl;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;

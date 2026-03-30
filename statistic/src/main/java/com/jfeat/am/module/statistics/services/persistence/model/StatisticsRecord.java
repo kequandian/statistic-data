@@ -212,7 +212,7 @@ public class StatisticsRecord extends Model<StatisticsRecord> {
 	public static final String TMP_FIELD_ID = "tmp_field_id";
 
 	@Override
-	protected Serializable pkVal() {
+	public Serializable pkVal() {
 		return this.id;
 	}
 

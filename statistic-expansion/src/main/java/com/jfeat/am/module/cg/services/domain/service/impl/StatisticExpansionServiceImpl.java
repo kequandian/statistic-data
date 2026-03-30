@@ -13,7 +13,7 @@ import com.jfeat.crud.base.exception.BusinessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.File;
 
 import static com.jfeat.am.module.statistics.api.perm.StatisticsMetaPermission.DEFAULT_REPORT_PERM_ID;

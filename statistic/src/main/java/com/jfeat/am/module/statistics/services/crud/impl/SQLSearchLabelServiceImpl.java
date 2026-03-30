@@ -22,9 +22,10 @@ public class SQLSearchLabelServiceImpl implements SQLSearchLabelService {
         if(JWTKit.getUserId()!=null) {
             defaultMap.put(JWTKitParameter.USER_ID, JWTKit.getUserId().toString());
         }
-        if(JWTKit.getBUserType()!=null) {
-            defaultMap.put(JWTKitParameter.B_USER_TYPE, JWTKit.getBUserType());
-        }
+        // getBUserType() method not available in new JWTKit version
+        // if(JWTKit.getBUserType()!=null) {
+        //     defaultMap.put(JWTKitParameter.B_USER_TYPE, JWTKit.getBUserType());
+        // }
         return defaultMap;
     }
 

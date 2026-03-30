@@ -155,7 +155,7 @@ public class StatisticsMetaGroup extends Model<StatisticsMetaGroup> {
       public static final String TITLE = "title";
 
       @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
           return this.id;
       }
 

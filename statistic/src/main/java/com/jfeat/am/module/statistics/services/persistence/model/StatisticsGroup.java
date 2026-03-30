@@ -138,7 +138,7 @@ public class StatisticsGroup extends Model<StatisticsGroup> {
 	public static final String NOTE = "note";
 
 	@Override
-	protected Serializable pkVal() {
+	public Serializable pkVal() {
 		return this.id;
 	}
 
