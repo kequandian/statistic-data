@@ -5,11 +5,19 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.jfeat</groupId>
     <artifactId>statistic-expansion</artifactId>
-    <version>1.0.0</version>
+    <version>21.0.0</version>
     <packaging>jar</packaging>
 
     <name>statistic-expansion</name>
     <description>statistic-expansion</description>
+
+    <!-- upgrade history
+    1.0.0 initial version
+
+    21.0.0 upgrade to Java 17
+    @when 2026-03-30
+    @who claude
+    -->
 
     <parent>
         <groupId>com.jfeat</groupId>
@@ -29,7 +37,7 @@
         <dependency>
             <groupId>com.jfeat</groupId>
             <artifactId>statistic</artifactId>
-            <version>1.4.0</version>
+            <version>21.0.0</version>
         </dependency>
 
         <dependency>

@@ -5,11 +5,19 @@
 
     <groupId>com.jfeat</groupId>
     <artifactId>statistic-mq</artifactId>
-    <version>1.2.0</version>
+    <version>21.0.0</version>
     <packaging>jar</packaging>
 
     <name>Statistic-MQ</name>
     <description>Statistic MQ</description>
+
+    <!-- upgrade history
+    1.2.0 initial version
+
+    21.0.0 upgrade to Java 17
+    @when 2026-03-30
+    @who claude
+    -->
 
     <parent>
         <groupId>com.jfeat</groupId>
@@ -19,7 +27,7 @@
     </parent>
 
     <properties>
-        <statistic.version>1.5.0</sb-statistic.version>
+        <statistic.version>21.0.0</statistic.version>
         <skipStandalone>true</skipStandalone>
     </properties>
 
