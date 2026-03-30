@@ -2,7 +2,7 @@ package com.jfeat.am.module.reportpage.impl;
 import com.jfeat.am.module.statement.services.legacy.dao.TableColumnRatesDao;
 import com.jfeat.am.module.reportpage.TableColumnRatesService;
 import org.springframework.stereotype.Service;
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 
