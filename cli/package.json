@@ -1,0 +1,30 @@
+{
+  "name": "statistic-cli",
+  "version": "2.0.0",
+  "description": "统计数据 CLI 工具 - 用于访问统计数据 API",
+  "main": "lib/index.js",
+  "bin": {
+    "statistic-cli": "./bin/statistic-cli.js",
+    "stat-cli": "./bin/statistic-cli.js",
+    "stats-cli": "./bin/stats-cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:commands": "node test/commands.test.js"
+  },
+  "keywords": [
+    "statistic",
+    "report",
+    "cli",
+    "charts",
+    "data"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}

@@ -1,0 +1,134 @@
+/**
+ * Bar Command Handler
+ * Handles bar chart related commands
+ */
+
+const { StatsAPIClient } = require('../api/client');
+
+// Store data in memory for each field
+const fieldData = new Map();
+
+/**
+ * Handle bar command
+ * @param {Array} args - Command arguments
+ * @param {Object} options - Command options
+ */
+async function handleBar(args, options) {
+    const client = new StatsAPIClient({
+        baseUrl: options.baseUrl,
+        token: options.token,
+        timeout: options.timeout,
+        verbose: options.verbose
+    });
+
+    const fieldName = args[0];
+
+    if (!fieldName) {
+        console.error('Usage: stats-cli bar <name> category "<label>" with <value> [--json]');
+        console.error('   or: stats-cli bar <name> [--json]');
+        process.exit(1);
+    }
+
+    // Check if SQL mode
+    const sqlIndex = args.indexOf('--sql');
+    if (sqlIndex !== -1 && args[sqlIndex + 1]) {
+        const sql = args[sqlIndex + 1];
+        console.log('SQL mode for bar is not yet implemented.');
+        console.log(`SQL: ${sql}`);
+        return;
+    }
+
+    // Check if adding data (category "<label>" with <value>)
+    const categoryIndex = args.indexOf('category');
+    const withIndex = args.indexOf('with');
+
+    if (categoryIndex !== -1 && withIndex !== -1 && categoryIndex < withIndex) {
+        // Adding data: stats-cli bar <name> category "Q1" with 15000
+        const label = args[categoryIndex + 1];
+        const value = parseFloat(args[withIndex + 1]);
+
+        if (!label || isNaN(value)) {
+            console.error('Usage: stats-cli bar <name> category "<label>" with <value>');
+            process.exit(1);
+        }
+
+        // Initialize data array for this field if not exists
+        if (!fieldData.has(fieldName)) {
+            fieldData.set(fieldName, []);
+        }
+
+        // Add data
+        const items = fieldData.get(fieldName);
+        items.push({ name: label, value: value });
+        fieldData.set(fieldName, items);
+
+        console.log(`Added data: ${label} = ${value}`);
+        console.log(`Total items: ${items.length}`);
+
+        // Insert the data immediately
+        try {
+            // Ensure field exists
+            await client.ensureFieldExists({
+                field: fieldName,
+                name: fieldName,
+                groupName: 'default',
+                pattern: 'Timeline',
+                chart: 'BarTimeline',
+                attrRuntime: 0,
+                attrInvisible: 0,
+                attrSpan: 1,
+                attrIndex: 0
+            });
+
+            // Insert data
+            const chunks = items.map((item, index) => ({
+                name: item.name,
+                value: String(item.value),
+                seq: index
+            }));
+
+            await client.insertData(fieldName, chunks);
+            console.log(`Data inserted successfully for field '${fieldName}'`);
+
+            // Clear the stored data after successful insert
+            fieldData.delete(fieldName);
+        } catch (error) {
+            console.error(`Error inserting data: ${error.message}`);
+            // Keep the data in memory for retry
+        }
+    } else {
+        // Query mode: stats-cli bar <name>
+        try {
+            const result = await client.getStatisticByGroup('default');
+
+            if (options.json) {
+                console.log(JSON.stringify(result, null, 2));
+                return;
+            }
+
+            // Find the field data
+            if (result && result.data) {
+                const fieldData = result.data.find(d => d.field === fieldName);
+                if (fieldData && fieldData.records) {
+                    console.log(`\n=== Bar Chart: ${fieldName} ===`);
+                    const maxValue = Math.max(...fieldData.records.map(r => parseFloat(r.recordValue || 0)));
+                    fieldData.records.forEach(record => {
+                        const value = parseFloat(record.recordValue || 0);
+                        const barLength = maxValue > 0 ? Math.round((value / maxValue) * 30) : 0;
+                        const bar = '█'.repeat(barLength);
+                        console.log(`  ${record.recordName.padEnd(15)} │${bar} ${value}`);
+                    });
+                    console.log();
+                } else {
+                    console.log(`No data found for field '${fieldName}'`);
+                }
+            } else {
+                console.log(`No data found for field '${fieldName}'`);
+            }
+        } catch (error) {
+            console.error(`Error querying data: ${error.message}`);
+        }
+    }
+}
+
+module.exports = { handleBar };
