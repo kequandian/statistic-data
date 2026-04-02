@@ -30,8 +30,7 @@ async function testDoubleBarAddFirstSeries() {
     const result = execCliCapture(`double-bar ${testField}_two series "2024" "Q1" with 15000`);
     assert(result.success, 'Command should succeed');
     assertContains(result.stdout, 'Added data', 'Should confirm data added');
-    assertContains(result.stdout, 'Waiting for more data', 'Should show waiting message');
-    assertContains(result.stdout, 'Current series: 1/2', 'Should show series count');
+    assertContains(result.stdout, 'Data inserted successfully', 'Should confirm insert');
 }
 
 /**

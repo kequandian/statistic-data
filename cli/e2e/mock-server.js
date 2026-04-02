@@ -32,7 +32,7 @@ function parseBody(req) {
         req.on('data', chunk => body += chunk);
         req.on('end', () => {
             try {
-                resolve body ? JSON.parse(body) : {});
+                resolve(body ? JSON.parse(body) : {});
             } catch (e) {
                 reject(e);
             }
