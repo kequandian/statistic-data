@@ -140,15 +140,15 @@ EXAMPLES:
 BAR COMMAND - 柱状图数据管理
 
 USAGE:
-  stats-cli bar <name> category "<label>" with <value>
+  stats-cli bar <name> column "<label>" with <value>
   stats-cli bar <name> [--json]
 
 DESCRIPTION:
   添加柱状图数据。
 
 EXAMPLES:
-  stats-cli bar monthly_sales category "Q1" with 15000
-  stats-cli bar monthly_sales category "Q2" with 23000
+  stats-cli bar monthly_sales column "Q1" with 15000
+  stats-cli bar monthly_sales column "Q2" with 23000
   stats-cli bar monthly_sales
   stats-cli bar monthly_sales --json
 `,
@@ -171,7 +171,7 @@ EXAMPLES:
 DOUBLE-BAR COMMAND - 双柱图数据管理
 
 USAGE:
-  stats-cli double-bar <name> series "<series>" "<category>" with <value>
+  stats-cli double-bar <name> series "<series>" "<column>" with <value>
   stats-cli double-bar <name> [--json]
 
 DESCRIPTION:

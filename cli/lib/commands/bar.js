@@ -24,7 +24,7 @@ async function handleBar(args, options) {
     const fieldName = args[0];
 
     if (!fieldName) {
-        console.error('Usage: stats-cli bar <name> category "<label>" with <value> [--json]');
+        console.error('Usage: stats-cli bar <name> column "<label>" with <value> [--json]');
         console.error('   or: stats-cli bar <name> [--json]');
         process.exit(1);
     }
@@ -38,17 +38,17 @@ async function handleBar(args, options) {
         return;
     }
 
-    // Check if adding data (category "<label>" with <value>)
-    const categoryIndex = args.indexOf('category');
+    // Check if adding data (column "<label>" with <value>)
+    const columnIndex = args.indexOf('column');
     const withIndex = args.indexOf('with');
 
-    if (categoryIndex !== -1 && withIndex !== -1 && categoryIndex < withIndex) {
-        // Adding data: stats-cli bar <name> category "Q1" with 15000
-        const label = args[categoryIndex + 1];
+    if (columnIndex !== -1 && withIndex !== -1 && columnIndex < withIndex) {
+        // Adding data: stats-cli bar <name> column "Q1" with 15000
+        const label = args[columnIndex + 1];
         const value = parseFloat(args[withIndex + 1]);
 
         if (!label || isNaN(value)) {
-            console.error('Usage: stats-cli bar <name> category "<label>" with <value>');
+            console.error('Usage: stats-cli bar <name> column "<label>" with <value>');
             process.exit(1);
         }
 

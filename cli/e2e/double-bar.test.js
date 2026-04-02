@@ -20,7 +20,7 @@ async function testDoubleBarHelp() {
     const result = execCliCapture('double-bar --help');
     assert(result.success, 'Command should succeed');
     assertContains(result.stdout, 'DOUBLE-BAR COMMAND', 'Should show double-bar command help');
-    assertContains(result.stdout, 'series "<series>" "<category>" with <value>', 'Should show usage');
+    assertContains(result.stdout, 'series "<series>" "<column>" with <value>', 'Should show usage');
 }
 
 /**

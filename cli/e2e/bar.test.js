@@ -20,14 +20,14 @@ async function testBarHelp() {
     const result = execCliCapture('bar --help');
     assert(result.success, 'Command should succeed');
     assertContains(result.stdout, 'BAR COMMAND', 'Should show bar command help');
-    assertContains(result.stdout, 'category "<label>" with <value>', 'Should show usage');
+    assertContains(result.stdout, 'column "<label>" with <value>', 'Should show usage');
 }
 
 /**
  * Test: Add single bar data item
  */
 async function testBarAddSingleItem() {
-    const result = execCliCapture(`bar ${testField}_single category "Q1" with 15000`);
+    const result = execCliCapture(`bar ${testField}_single column "Q1" with 15000`);
     assert(result.success, 'Command should succeed');
     assertContains(result.stdout, 'Added data', 'Should confirm data added');
     assertContains(result.stdout, 'Data inserted successfully', 'Should confirm insert');
@@ -37,8 +37,8 @@ async function testBarAddSingleItem() {
  * Test: Add multiple bar data items
  */
 async function testBarAddMultipleItems() {
-    execCliCapture(`bar ${testField}_multi category "Q1" with 15000`);
-    const result = execCliCapture(`bar ${testField}_multi category "Q2" with 23000`);
+    execCliCapture(`bar ${testField}_multi column "Q1" with 15000`);
+    const result = execCliCapture(`bar ${testField}_multi column "Q2" with 23000`);
     assert(result.success, 'Command should succeed');
     assertContains(result.stdout, 'Added data', 'Should confirm data added');
     assertContains(result.stdout, 'Data inserted successfully', 'Should confirm insert');
@@ -71,7 +71,7 @@ async function testBarQueryJson() {
  * Test: Bar with zero value
  */
 async function testBarWithZeroValue() {
-    const result = execCliCapture(`bar ${testField}_zero category "Empty" with 0`);
+    const result = execCliCapture(`bar ${testField}_zero column "Empty" with 0`);
     assert(result.success, 'Command should succeed');
     assertContains(result.stdout, 'Added data', 'Should confirm data added');
 }
@@ -80,7 +80,7 @@ async function testBarWithZeroValue() {
  * Test: Bar with decimal value
  */
 async function testBarWithDecimalValue() {
-    const result = execCliCapture(`bar ${testField}_decimal category "Decimal" with 12345.67`);
+    const result = execCliCapture(`bar ${testField}_decimal column "Decimal" with 12345.67`);
     assert(result.success, 'Command should succeed');
     assertContains(result.stdout, 'Added data', 'Should confirm data added');
 }
@@ -89,7 +89,7 @@ async function testBarWithDecimalValue() {
  * Test: Bar with negative value
  */
 async function testBarWithNegativeValue() {
-    const result = execCliCapture(`bar ${testField}_negative category "Loss" with -5000`);
+    const result = execCliCapture(`bar ${testField}_negative column "Loss" with -5000`);
     assert(result.success, 'Command should succeed');
     assertContains(result.stdout, 'Added data', 'Should confirm data added');
 }
@@ -98,10 +98,10 @@ async function testBarWithNegativeValue() {
  * Test: Bar with multiple categories (quarterly data)
  */
 async function testBarQuarterlyData() {
-    execCliCapture(`bar ${testField}_quarterly category "Q1" with 10000`);
-    execCliCapture(`bar ${testField}_quarterly category "Q2" with 15000`);
-    execCliCapture(`bar ${testField}_quarterly category "Q3" with 12000`);
-    const result = execCliCapture(`bar ${testField}_quarterly category "Q4" with 18000`);
+    execCliCapture(`bar ${testField}_quarterly column "Q1" with 10000`);
+    execCliCapture(`bar ${testField}_quarterly column "Q2" with 15000`);
+    execCliCapture(`bar ${testField}_quarterly column "Q3" with 12000`);
+    const result = execCliCapture(`bar ${testField}_quarterly column "Q4" with 18000`);
     assert(result.success, 'Command should succeed');
 
     await sleep(500);
