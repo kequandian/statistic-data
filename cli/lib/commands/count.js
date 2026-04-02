@@ -74,6 +74,7 @@ async function handleCount(args, options) {
             console.log(`Value: ${value}`);
         } catch (error) {
             console.error(`Error inserting data: ${error.message}`);
+            process.exit(1);
         }
     } else {
         // Query mode: stats-cli count <name>

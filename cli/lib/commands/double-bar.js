@@ -5,9 +5,6 @@
 
 const { StatsAPIClient } = require('../api/client');
 
-// Store data in memory for each field
-const fieldData = new Map();
-
 /**
  * Handle double-bar command
  * @param {Array} args - Command arguments
@@ -44,67 +41,35 @@ async function handleDoubleBar(args, options) {
             process.exit(1);
         }
 
-        // Initialize data map for this field if not exists
-        if (!fieldData.has(fieldName)) {
-            fieldData.set(fieldName, new Map());
-        }
+        // Insert data immediately (for E2E testing compatibility)
+        try {
+            // Ensure field exists
+            await client.ensureFieldExists({
+                field: fieldName,
+                name: fieldName,
+                groupName: 'default',
+                pattern: 'Tuple',
+                chart: 'BarGroup_2',
+                attrRuntime: 0,
+                attrInvisible: 0,
+                attrSpan: 1,
+                attrIndex: 0
+            });
 
-        const seriesMap = fieldData.get(fieldName);
+            // Insert single data point
+            const chunks = [{
+                name: categoryName,
+                value: String(value),
+                tuple: seriesName,
+                seq: 0
+            }];
 
-        // Initialize series array if not exists
-        if (!seriesMap.has(seriesName)) {
-            seriesMap.set(seriesName, []);
-        }
-
-        // Add data to series
-        const items = seriesMap.get(seriesName);
-        items.push({ name: categoryName, value: value });
-        seriesMap.set(seriesName, items);
-
-        console.log(`Added data: ${seriesName} - ${categoryName} = ${value}`);
-
-        // Check if we have exactly 2 series
-        if (seriesMap.size === 2) {
-            // Insert the data
-            try {
-                // Ensure field exists
-                await client.ensureFieldExists({
-                    field: fieldName,
-                    name: fieldName,
-                    groupName: 'default',
-                    pattern: 'Tuple',
-                    chart: 'BarGroup_2',
-                    attrRuntime: 0,
-                    attrInvisible: 0,
-                    attrSpan: 1,
-                    attrIndex: 0
-                });
-
-                // Convert series map to chunks
-                const chunks = [];
-                let seq = 0;
-                for (const [seriesName, items] of seriesMap) {
-                    for (const item of items) {
-                        chunks.push({
-                            name: item.name,
-                            value: String(item.value),
-                            tuple: seriesName,
-                            seq: seq++
-                        });
-                    }
-                }
-
-                await client.insertData(fieldName, chunks);
-                console.log(`Data inserted successfully for field '${fieldName}'`);
-
-                // Clear the stored data after successful insert
-                fieldData.delete(fieldName);
-            } catch (error) {
-                console.error(`Error inserting data: ${error.message}`);
-                // Keep the data in memory for retry
-            }
-        } else {
-            console.log(`Waiting for more data. Current series: ${seriesMap.size}/2`);
+            await client.insertData(fieldName, chunks);
+            console.log(`Added data: ${seriesName} - ${categoryName} = ${value}`);
+            console.log(`Data inserted successfully for field '${fieldName}'`);
+        } catch (error) {
+            console.error(`Error inserting data: ${error.message}`);
+            process.exit(1);
         }
     } else {
         // Query mode: stats-cli double-bar <name>
