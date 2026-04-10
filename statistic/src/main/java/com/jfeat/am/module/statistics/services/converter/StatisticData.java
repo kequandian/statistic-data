@@ -16,6 +16,7 @@ public class StatisticData implements StatisticDataBase {
     public static final String STAT_PATTERN_TUPLE_TIMELINE = "TupleTimeline";
     public static final String STAT_PATTERN_TUPLE_CLUSTER = "TupleCluster";
     public static final String STAT_PATTERN_TUPLE_TIMELINE_CLUSTER = "TupleTimelineCluster";
+    public static final String STAT_PATTERN_GAUGE = "Gauge";
 
     /**
      * 检查 统计域 pattern 不否有效
@@ -64,6 +65,10 @@ public class StatisticData implements StatisticDataBase {
             return true;
         }
         if(STAT_PATTERN_TUPLE_TIMELINE_CLUSTER.equals(pattern)){
+            return true;
+        }
+        // GAUGE
+        if(STAT_PATTERN_GAUGE.equals(pattern)){
             return true;
         }
         return false;

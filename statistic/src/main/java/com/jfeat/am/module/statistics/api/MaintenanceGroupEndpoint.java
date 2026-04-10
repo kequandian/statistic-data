@@ -52,7 +52,7 @@ public class MaintenanceGroupEndpoint{
     public Tip getConfigGroup(@PathVariable Long id) {
         StatisticsGroup group = statisticsGroupService.retrieveGroup(id);
         if (group == null) {
-            throw new BusinessException(BusinessCode.NotFound.getCode(), "StatisticsGroup not found with id: " + id);
+            throw new BusinessException(BusinessCode.CRUD_QUERY_FAILURE, "StatisticsGroup not found with id: " + id);
         }
         return SuccessTip.create(group);
     }
@@ -62,7 +62,7 @@ public class MaintenanceGroupEndpoint{
     public Tip deleteConfigGroup(@PathVariable Long id) {
         StatisticsGroup group = statisticsGroupService.retrieveGroup(id);
         if (group == null) {
-            throw new BusinessException(BusinessCode.NotFound.getCode(), "StatisticsGroup not found with id: " + id);
+            throw new BusinessException(BusinessCode.CRUD_QUERY_FAILURE, "StatisticsGroup not found with id: " + id);
         }
         return SuccessTip.create(statisticsGroupService.deleteGroup(id));
     }
@@ -72,7 +72,7 @@ public class MaintenanceGroupEndpoint{
     public Tip getConfigGroupChildren(@PathVariable Long id) {
         StatisticsGroup group = statisticsGroupService.retrieveGroup(id);
         if (group == null) {
-            throw new BusinessException(BusinessCode.NotFound.getCode(), "StatisticsGroup not found with id: " + id);
+            throw new BusinessException(BusinessCode.CRUD_QUERY_FAILURE, "StatisticsGroup not found with id: " + id);
         }
         return SuccessTip.create(statisticsGroupService.getGroupChildren(id));
     }
@@ -110,7 +110,7 @@ public class MaintenanceGroupEndpoint{
         // Retrieve existing group to preserve required fields
         StatisticsGroup existing = statisticsGroupService.retrieveGroup(id);
         if (existing == null) {
-            throw new BusinessException(BusinessCode.NotFound.getCode(), "StatisticsGroup not found with id: " + id);
+            throw new BusinessException(BusinessCode.CRUD_QUERY_FAILURE, "StatisticsGroup not found with id: " + id);
         }
 
         // Preserve name and title if not provided

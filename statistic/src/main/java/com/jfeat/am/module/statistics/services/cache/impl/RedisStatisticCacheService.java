@@ -1,0 +1,104 @@
+package com.jfeat.am.module.statistics.services.cache.impl;
+
+import com.jfeat.am.module.statistics.services.cache.StatisticCacheService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import jakarta.annotation.Resource;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Redis-based implementation of StatisticCacheService
+ * Cache keys format: stat:{field}:{pattern}:{identifier}
+ * TTL: 5 minutes (configurable)
+ */
+@Service("redisStatisticCacheService")
+public class RedisStatisticCacheService implements StatisticCacheService {
+
+    protected static final Logger logger = LoggerFactory.getLogger(RedisStatisticCacheService.class);
+
+    private static final String CACHE_PREFIX = "stat:";
+    private static final long DEFAULT_TTL_MINUTES = 5;
+
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Override
+    public String generateCacheKey(String field, String pattern, String identifier) {
+        StringBuilder key = new StringBuilder(CACHE_PREFIX);
+        key.append(field);
+        key.append(":");
+        key.append(pattern);
+        if (identifier != null && !identifier.isEmpty()) {
+            key.append(":");
+            key.append(identifier);
+        }
+        return key.toString();
+    }
+
+    @Override
+    public Object getCachedData(String field, String pattern, String identifier) {
+        String key = generateCacheKey(field, pattern, identifier);
+        try {
+            Object data = redisTemplate.opsForValue().get(key);
+            if (data != null) {
+                logger.debug("Cache hit for key: {}", key);
+            } else {
+                logger.debug("Cache miss for key: {}", key);
+            }
+            return data;
+        } catch (Exception e) {
+            logger.warn("Failed to get cached data for key: {}", key, e);
+            return null;
+        }
+    }
+
+    @Override
+    public void cacheData(String field, String pattern, String identifier, Object data) {
+        String key = generateCacheKey(field, pattern, identifier);
+        try {
+            redisTemplate.opsForValue().set(key, data, DEFAULT_TTL_MINUTES, TimeUnit.MINUTES);
+            logger.debug("Cached data for key: {}, TTL: {} minutes", key, DEFAULT_TTL_MINUTES);
+        } catch (Exception e) {
+            logger.warn("Failed to cache data for key: {}", key, e);
+        }
+    }
+
+    @Override
+    public void evictField(String field) {
+        try {
+            // Evict all keys matching pattern: stat:{field}:*
+            String pattern = CACHE_PREFIX + field + ":*";
+            redisTemplate.delete(redisTemplate.keys(pattern));
+            logger.debug("Evicted all cache entries for field: {}", field);
+        } catch (Exception e) {
+            logger.warn("Failed to evict cache for field: {}", field, e);
+        }
+    }
+
+    @Override
+    public void evictFieldPattern(String field, String pattern) {
+        try {
+            // Evict all keys matching pattern: stat:{field}:{pattern}:*
+            String keyPattern = CACHE_PREFIX + field + ":" + pattern + ":*";
+            redisTemplate.delete(redisTemplate.keys(keyPattern));
+            logger.debug("Evicted cache entries for field: {}, pattern: {}", field, pattern);
+        } catch (Exception e) {
+            logger.warn("Failed to evict cache for field: {}, pattern: {}", field, pattern, e);
+        }
+    }
+
+    @Override
+    public void evictAll() {
+        try {
+            // Evict all statistics cache keys
+            String pattern = CACHE_PREFIX + "*";
+            redisTemplate.delete(redisTemplate.keys(pattern));
+            logger.debug("Evicted all statistics cache entries");
+        } catch (Exception e) {
+            logger.warn("Failed to evict all cache entries", e);
+        }
+    }
+}

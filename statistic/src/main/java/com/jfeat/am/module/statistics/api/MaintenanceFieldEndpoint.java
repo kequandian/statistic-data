@@ -1,6 +1,7 @@
 package com.jfeat.am.module.statistics.api;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.jfeat.am.module.statistics.services.cache.StatisticCacheProxy;
 import com.jfeat.am.module.statistics.services.domain.dao.QueryStatisticsFieldDao;
 import com.jfeat.am.module.statistics.services.persistence.model.StatisticsField;
 import com.jfeat.am.module.statistics.services.crud.StatisticsFieldService;
@@ -34,6 +35,9 @@ public class MaintenanceFieldEndpoint{
     @Resource
     private QueryStatisticsFieldDao statisticsFieldDao;
 
+    @Resource
+    private StatisticCacheProxy statisticCacheProxy;
+
 
     @ApiOperation(value = "增加统计域", response = StatisticsField.class)
     @PostMapping
@@ -47,7 +51,12 @@ public class MaintenanceFieldEndpoint{
             // Optionally auto-resolve groupId from groupName if needed
             // For now, require both to be set explicitly
         }
-        return SuccessTip.create(statisticsFieldService.createMaster(entity));
+        Integer affected = statisticsFieldService.createMaster(entity);
+        // Evict cache for this field
+        if (entity.getField() != null) {
+            statisticCacheProxy.evictField(entity.getField());
+        }
+        return SuccessTip.create(affected);
     }
 
     @ApiOperation("获取统计域")
@@ -62,7 +71,7 @@ public class MaintenanceFieldEndpoint{
         // Retrieve existing entity to preserve groupName if not provided
         StatisticsField existing = statisticsFieldService.retrieveMaster(id);
         if (existing == null) {
-            throw new BusinessException(BusinessCode.NotFound.getCode(), "StatisticsField not found with id: " + id);
+            throw new BusinessException(BusinessCode.CRUD_QUERY_FAILURE, "StatisticsField not found with id: " + id);
         }
 
         // Preserve groupName if not provided in update request
@@ -76,7 +85,12 @@ public class MaintenanceFieldEndpoint{
         }
 
         entity.setId(id);
-        return SuccessTip.create(statisticsFieldService.updateMaster(entity, true));
+        Integer updated = statisticsFieldService.updateMaster(entity, true);
+        // Evict cache for this field
+        if (existing != null && existing.getField() != null) {
+            statisticCacheProxy.evictField(existing.getField());
+        }
+        return SuccessTip.create(updated);
     }
 
     @ApiOperation("分页返回所有图表数据域")
@@ -118,7 +132,7 @@ public class MaintenanceFieldEndpoint{
         // Retrieve existing entity to preserve other fields
         StatisticsField existing = statisticsFieldService.retrieveMaster(id);
         if (existing == null) {
-            throw new BusinessException(BusinessCode.NotFound.getCode(), "StatisticsField not found with id: " + id);
+            throw new BusinessException(BusinessCode.CRUD_QUERY_FAILURE, "StatisticsField not found with id: " + id);
         }
 
         // Only update groupId, preserve all other fields including groupName
@@ -176,7 +190,7 @@ public class MaintenanceFieldEndpoint{
         // Retrieve existing entity to preserve all fields
         StatisticsField existing = statisticsFieldService.retrieveMaster(id);
         if (existing == null) {
-            throw new BusinessException(BusinessCode.NotFound.getCode(), "StatisticsField not found with id: " + id);
+            throw new BusinessException(BusinessCode.CRUD_QUERY_FAILURE, "StatisticsField not found with id: " + id);
         }
 
         // Create new entity and copy all existing fields
@@ -196,7 +210,12 @@ public class MaintenanceFieldEndpoint{
         // Apply the specific attribute change
         attributeSetter.accept(entity);
 
-        return SuccessTip.create(statisticsFieldService.updateMaster(entity, true));
+        Integer updated = statisticsFieldService.updateMaster(entity, true);
+        // Evict cache for this field
+        if (existing != null && existing.getField() != null) {
+            statisticCacheProxy.evictField(existing.getField());
+        }
+        return SuccessTip.create(updated);
     }
 
 }

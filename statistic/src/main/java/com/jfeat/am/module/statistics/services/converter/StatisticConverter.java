@@ -348,4 +348,30 @@ public class StatisticConverter {
 
         return tupleTimelineCluster;
     }
+
+    /**
+     * Pattern Gauge
+     * Returns simple key-value pairs: {"<recordName>":"<recordValue>"}
+     * @param model
+     * @return
+     */
+    public static StatisticDataGauge convertStatisticGauge(StatisticsFieldModel model){
+        StatisticDataGauge gaugeData = new StatisticDataGauge();
+        gaugeData.setField(model.getField());
+        gaugeData.setTitle(model.getName());
+        gaugeData.setPattern(model.getPattern());
+        gaugeData.setChart(model.getChart());
+        gaugeData.setSpan(model.getAttrSpan());
+
+        if(model.getItems() != null && !model.getItems().isEmpty()) {
+            for (StatisticsRecord record : model.getItems()) {
+                if(gaugeData.getIdentifier() == null){
+                    gaugeData.setIdentifier(record.getIdentifier());
+                }
+                gaugeData.addMetric(record.getRecordName(), record.getRecordValue());
+            }
+        }
+
+        return gaugeData;
+    }
 }

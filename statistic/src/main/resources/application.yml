@@ -11,6 +11,13 @@ am:
   redis-host: 127.0.0.1
   redis-port: 6379
 
+###################  statistics cache配置  ###################
+statistics:
+  cache:
+    enabled: true  #是否开启统计缓存 (true/false)
+    impl: redisStatisticCacheService  #缓存实现: redisStatisticCacheService 或 memoryStatisticCacheService
+    ttl: 5  #缓存过期时间(分钟)
+
 ####################  jwt配置  ###################
 #jwt:
 #  encoded-key: L7A/6zARSkK1j7Vd5SDD9pSSqZlqF7mAhiOgRbgv9Smce6tf4cJnvKOjtKPxNNnWQj+2lQEScm3XIUjhW+YVZg==

@@ -1,5 +1,6 @@
 package com.jfeat.am.module.statistics.api;
 
+import com.jfeat.am.module.statistics.services.cache.StatisticCacheProxy;
 import com.jfeat.am.module.statistics.services.crud.StatisticsFieldService;
 import com.jfeat.am.module.statistics.services.converter.StatisticConverter;
 import com.jfeat.am.module.statistics.services.converter.StatisticData;
@@ -29,8 +30,8 @@ public class StatisticsFieldEndpoint{
     @Resource
     StatisticsFieldService statisticsFieldService;
 
-    //@Resource
-    //GeneralStatisticService generalStatisticService;
+    @Resource
+    private StatisticCacheProxy statisticCacheProxy;
 
     @ApiOperation("获取指定数据域数据")
     @GetMapping("/{field}")
@@ -45,11 +46,19 @@ public class StatisticsFieldEndpoint{
     @ApiOperation("获取指定数据域数据")
     @GetMapping("/{field}/statistic")
     public Tip getStatisticField(@PathVariable String field) {
+        // Get field metadata first to determine pattern
         StatisticsField statisticsField = statisticsFieldService.getStatisticsFieldModel(field, null);
-
         String pattern = statisticsField.getPattern();
 
+        // Try to get from cache with null identifier
+        Object cachedData = statisticCacheProxy.getCachedData(field, pattern, null);
+        if (cachedData != null) {
+            return SuccessTip.create(cachedData);
+        }
+
+        // Cache miss, fetch from database
         Object statistic = null;
+        String identifier = null;
 
         if (statisticsField instanceof StatisticsFieldModel) {
             StatisticsFieldModel fieldModel = (StatisticsFieldModel) statisticsField;
@@ -94,6 +103,16 @@ public class StatisticsFieldEndpoint{
             }
             if (StatisticData.STAT_PATTERN_TUPLE_TIMELINE_CLUSTER.equals(pattern)) {
                 statistic = StatisticConverter.convertStatisticTupleTimelineCluster(fieldModel);
+            }
+
+            //pattern gauge
+            if (StatisticData.STAT_PATTERN_GAUGE.equals(pattern)) {
+                statistic = StatisticConverter.convertStatisticGauge(fieldModel);
+            }
+
+            // Cache the result
+            if (statistic != null) {
+                statisticCacheProxy.cacheData(field, pattern, identifier, statistic);
             }
 
         }//else if(statisticsField.getQuerySql()!=null){
