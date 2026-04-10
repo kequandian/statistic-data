@@ -9,8 +9,6 @@ import com.jfeat.am.module.statistics.services.domain.model.StatisticsMetaRecord
 import com.jfeat.am.module.statistics.services.gen.persistence.model.StatisticsMeta;
 import com.jfeat.am.module.statistics.util.MetaUtil;
 import com.jfeat.crud.base.annotation.BusinessLog;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.dao.DuplicateKeyException;
 import com.jfeat.crud.base.tips.SuccessTip;
@@ -30,8 +28,6 @@ import jakarta.annotation.Resource;
  * @since 2021-03-05
  */
 @RestController
-
-@Api("StatisticExpansion")
 @RequestMapping("/api/adm/stat/expansion")
 public class StatisticExpansionEndpoint {
 
@@ -47,7 +43,6 @@ public class StatisticExpansionEndpoint {
     @BusinessLog(name = "MasterResource", value = "create MasterResource")
     @Permission(StatisticExpansionPermission.STATISTIC_EXPANSION_NEW)
     @PostMapping
-    @ApiOperation(value = "新建 MasterResource")
     public Tip createMasterResource(@RequestBody StatisticsMetaRecord entity) {
         Integer affected = 0;
         //类型进行映射
@@ -70,7 +65,6 @@ public class StatisticExpansionEndpoint {
 
     @BusinessLog(name = "StatisticsMeta", value = "update StatisticsMeta")
     @PutMapping("/{id}")
-    @ApiOperation(value = "修改 StatisticsMeta", response = StatisticsMetaRecord.class)
     public Tip updateStatisticsMeta(@PathVariable Long id, @RequestBody StatisticsMetaRecord entity) {
         //类型进行映射
         entity.setType(MetaUtil.replaceType(entity.getType()));
@@ -95,7 +89,6 @@ public class StatisticExpansionEndpoint {
 
     @BusinessLog(name = "StatisticsMeta", value = "delete StatisticsMeta")
     @DeleteMapping("/{id}")
-    @ApiOperation("删除 StatisticsMeta")
     public Tip deleteStatisticsMeta(@PathVariable Long id) {
         StatisticsMeta statisticsMeta = statisticsMetaService.retrieveMaster(id);
         if(statisticsMeta!=null && statisticsMeta.getMenuId()!=null){
