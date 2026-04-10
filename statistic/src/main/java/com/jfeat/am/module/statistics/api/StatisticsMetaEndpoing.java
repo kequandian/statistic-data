@@ -6,7 +6,6 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jfeat.am.common.annotation.UrlPermission;
-import com.jfeat.am.module.statistics.api.model.GenWebSetting;
 import com.jfeat.am.module.statistics.api.model.MetaTag;
 import com.jfeat.am.module.statistics.services.crud.ExtendedStatistics;
 import com.jfeat.am.module.statistics.services.crud.StatisticsMetaService;
@@ -15,7 +14,6 @@ import com.jfeat.am.module.statistics.services.domain.model.StatisticsMetaRecord
 import com.jfeat.am.module.statistics.services.domain.service.StatisticsMetaGroupService;
 import com.jfeat.am.module.statistics.services.gen.persistence.dao.StatisticsMetaMapper;
 import com.jfeat.am.module.statistics.services.gen.persistence.model.StatisticsMeta;
-import com.jfeat.am.module.statistics.util.GenCodeUtil;
 import com.jfeat.am.module.statistics.util.MetaUtil;
 import com.jfeat.crud.base.annotation.BusinessLog;
 import com.jfeat.crud.base.exception.BusinessCode;
@@ -30,10 +28,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
-import java.io.File;
 import java.util.List;
-
-import static com.jfeat.am.module.statistics.util.GenCodeUtil.DEFAULT_WEB_PAGE;
 
 @Api("统计 [Statistics] meta")
 @RestController
@@ -50,8 +45,6 @@ public class StatisticsMetaEndpoing {
     StatisticsMetaGroupService statisticsMetaGroupService;
     @Resource
     StatisticsMetaMapper statisticsMetaMapper;
-    @Resource
-    GenWebSetting genWebSetting;
 
 
     @ApiOperation("根据字段获取报表")
@@ -219,14 +212,5 @@ public class StatisticsMetaEndpoing {
     public Tip queryStatisticsMetas() {
         List<StatisticsMeta> statisticsMetaList = statisticsMetaMapper.selectList(new QueryWrapper<StatisticsMeta>());
         return SuccessTip.create(statisticsMetaList);
-    }
-
-    @PostMapping("/genTest")
-    public Tip genTest(@RequestBody StatisticsMeta statisticsMeta){
-        String url = GenCodeUtil.genUrl(genWebSetting.getWebProject(), statisticsMeta.getField());
-        GenCodeUtil.genCode(url,statisticsMeta.getField()+"Index.js",GenCodeUtil.genIndexTemplate(statisticsMeta).toString());
-        GenCodeUtil.genCode(url,statisticsMeta.getField()+".js",GenCodeUtil.genStringByMeta(statisticsMeta).toString());
-
-        return null;
     }
 }

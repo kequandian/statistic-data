@@ -4,7 +4,6 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.jfeat.am.core.jwt.JWTKit;
-import com.jfeat.am.module.statistics.api.model.GenWebSetting;
 import com.jfeat.am.module.statistics.api.model.MetaOutputSetting;
 import com.jfeat.am.module.statistics.api.model.MetaTag;
 import com.jfeat.am.module.statistics.services.crud.SQLSearchLabelService;
@@ -14,7 +13,6 @@ import com.jfeat.am.module.statistics.services.domain.model.StatisticsMetaRecord
 import com.jfeat.am.module.statistics.services.gen.crud.service.impl.CRUDStatisticsMetaServiceImpl;
 import com.jfeat.am.module.statistics.services.gen.persistence.dao.StatisticsMetaMapper;
 import com.jfeat.am.module.statistics.services.gen.persistence.model.StatisticsMeta;
-import com.jfeat.am.module.statistics.util.GenCodeUtil;
 import com.jfeat.crud.base.exception.BusinessCode;
 import com.jfeat.crud.base.exception.BusinessException;
 import org.slf4j.Logger;
@@ -56,26 +54,12 @@ public class StatisticsMetaServiceImpl extends CRUDStatisticsMetaServiceImpl imp
     @Resource
     SQLSearchLabelService sqlSearchLabelService;
 
-    @Resource
-    GenWebSetting genWebSetting;
-
 
     protected final static Logger logger = LoggerFactory.getLogger(StatisticsMetaServiceImpl.class);
 
     @Override
     public StatisticsMeta getStatisticsMetaById(Long id){
         return statisticsMetaMapper.selectById(id);
-    }
-
-
-
-    @Override
-    public String genWebCode(StatisticsMeta meta){
-        String url = GenCodeUtil.genUrl(genWebSetting.getWebProject(), meta.getField());
-        String indexFileName = meta.getField()+"Index.js";
-        GenCodeUtil.genCode(url,indexFileName,GenCodeUtil.genIndexTemplate(meta).toString());
-        GenCodeUtil.genCode(url,meta.getField()+".js",GenCodeUtil.genStringByMeta(meta).toString());
-        return File.separator + meta.getField()+ File.separator + indexFileName;
     }
 
 
