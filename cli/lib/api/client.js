@@ -190,6 +190,16 @@ class StatsAPIClient {
         });
     }
 
+    async updateFieldPattern(fieldId, pattern) {
+        return this._request('POST', `/api/cfg/stat/fields/${fieldId}/attr/pattern/${encodeURIComponent(pattern)}`);
+    }
+
+    async getFieldByName(fieldName) {
+        const result = await this.getFields();
+        const fields = result?.data?.records || result?.records || result?.data || result || [];
+        return fields.find(f => f.field === fieldName);
+    }
+
     // ==================== Statistics Query API ====================
     async getStatisticByGroup(group, identifier = null) {
         const params = {};

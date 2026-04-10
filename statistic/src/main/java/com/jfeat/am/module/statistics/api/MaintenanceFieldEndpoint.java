@@ -163,6 +163,12 @@ public class MaintenanceFieldEndpoint{
         return updateSingleAttribute(id, entity -> entity.setChart(chart));
     }
 
+    @ApiOperation("设置统计域 数据模式 [Count, Rate, Tuple, Gauge, etc.]")
+    @PostMapping("/{id}/attr/pattern/{pattern}")
+    public Tip changeStatisticsFieldPattern(@PathVariable Long id, @PathVariable String pattern) {
+        return updateSingleAttribute(id, entity -> entity.setPattern(pattern));
+    }
+
     @ApiOperation("设备统计域排序号")
     @PostMapping("/{id}/attr/index/{index}")
     public Tip setFieldIndex(@PathVariable Long id, @PathVariable Integer index) {

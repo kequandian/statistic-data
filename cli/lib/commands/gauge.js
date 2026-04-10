@@ -76,17 +76,23 @@ async function handleGauge(args, options) {
 
         try {
             // Ensure field exists (group name = field name for gauge dashboard)
-            await client.ensureFieldExists({
+            const fieldId = await client.ensureFieldExists({
                 field: fieldName,
                 name: fieldName,
                 groupName: fieldName,  // Use fieldName as groupName
-                pattern: 'Count',
+                pattern: 'Count',  // Initial pattern, will be updated to Gauge
                 chart: 'Total',
                 attrRuntime: 0,
                 attrInvisible: 0,
                 attrSpan: 1,
                 attrIndex: 0
             });
+
+            // Set pattern to Gauge for gauge dashboard
+            await client.updateFieldPattern(fieldId, 'Gauge');
+            if (options.verbose) {
+                console.error(`[DEBUG] Set pattern to 'Gauge' for field '${fieldName}'`);
+            }
 
             // Insert data as a record
             const chunks = [{
@@ -139,28 +145,36 @@ async function handleGauge(args, options) {
     } else {
         // Query mode: statistic-cli gauge alarm [--url]
         try {
-            const result = await client.getFieldStatistics(fieldName);
+            // When --url is provided, fetch the /statistic endpoint (pattern-based data)
+            if (options.showUrl) {
+                const apiUrl = `${client.baseUrl}/api/adm/stat/fields/${encodeURIComponent(fieldName)}/statistic`;
+                console.error(`URL: ${apiUrl}`);
 
-            // Backend returns: {code: 200, data: {field: "...", items: [...]}}
-            // The items array contains the records
-            if (result && result.data) {
-                const fieldData = result.data;
+                // Make request to the /statistic endpoint
+                const result = await client._request('GET', `/api/adm/stat/fields/${encodeURIComponent(fieldName)}/statistic`);
 
-                // Show URL if --url option is provided
-                if (options.showUrl) {
-                    console.log(`URL: ${client.baseUrl}/api/adm/stat/fields/${encodeURIComponent(fieldName)}`);
+                // Output the result from the /statistic endpoint
+                console.log(JSON.stringify(result.data || result, null, 2));
+            } else {
+                // Default behavior: use /fields endpoint and format as simple object
+                const result = await client.getFieldStatistics(fieldName);
+
+                // Backend returns: {code: 200, data: {field: "...", items: [...]}}
+                // The items array contains the records
+                if (result && result.data) {
+                    const fieldData = result.data;
+
+                    // Build result object from records
+                    const output = {};
+                    if (fieldData.items && fieldData.items.length > 0) {
+                        fieldData.items.forEach(record => {
+                            output[record.recordName] = parseInt(record.recordValue, 10) || 0;
+                        });
+                    }
+
+                    // Output JSON
+                    console.log(JSON.stringify(output, null, 2));
                 }
-
-                // Build result object from records
-                const output = {};
-                if (fieldData.items && fieldData.items.length > 0) {
-                    fieldData.items.forEach(record => {
-                        output[record.recordName] = parseInt(record.recordValue, 10) || 0;
-                    });
-                }
-
-                // Output JSON
-                console.log(JSON.stringify(output, null, 2));
             }
         } catch (error) {
             console.error(`✗ Error querying data: ${error.message}`);

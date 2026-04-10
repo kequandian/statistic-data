@@ -36,6 +36,7 @@ const { handleTotal } = require('../lib/commands/total');
 const { handlePie } = require('../lib/commands/pie');
 const { handleBar } = require('../lib/commands/bar');
 const { handleGauge } = require('../lib/commands/gauge');
+const { handlePattern, handlePatternList } = require('../lib/commands/pattern');
 
 const DEFAULT_TIMEOUT = 60000; // 60 seconds
 
@@ -501,6 +502,7 @@ COMMANDS:
   pie                 饼图数据管理
   bar                 柱状图数据管理
   gauge               仪表盘数据管理
+  pattern             变更统计域pattern
 
 Use 'statistic-cli <command> --help' for command-specific help.
 `);
@@ -578,6 +580,30 @@ EXAMPLES:
   statistic-cli gauge alarm add done with 1
   statistic-cli gauge alarm
   statistic-cli gauge alarm --url
+`,
+        pattern: `
+PATTERN COMMAND - 变更统计域的数据模式
+
+USAGE:
+  statistic-cli pattern <field> set <pattern>
+  statistic-cli pattern <field> show
+  statistic-cli pattern list
+
+SUBCOMMANDS:
+  set <pattern>               设置统计域的pattern
+  show                        显示当前pattern
+  list                        列出所有可用的pattern
+
+VALID PATTERNS:
+  Count, CountTimeline, CountCluster, CountTimelineCluster
+  Rate, RateTimeline, RateCluster, RateTimelineCluster
+  Tuple, TupleTimeline, TupleCluster, TupleTimelineCluster
+  Gauge
+
+EXAMPLES:
+  statistic-cli pattern device_alarm set Gauge
+  statistic-cli pattern device_alarm show
+  statistic-cli pattern list
 `,
         primary: `
 PRIMARY COMMAND - 主要功能命令组
@@ -1417,8 +1443,8 @@ async function main() {
         process.exit(0);
     }
 
-    // Handle total, pie, bar, gauge commands (use their own clients)
-    if (['total', 'pie', 'bar', 'gauge'].includes(options.command)) {
+    // Handle total, pie, bar, gauge, pattern commands (use their own clients)
+    if (['total', 'pie', 'bar', 'gauge', 'pattern'].includes(options.command)) {
         const args = options.commandArgs || [];
         switch (options.command) {
             case 'total':
@@ -1432,6 +1458,14 @@ async function main() {
                 break;
             case 'gauge':
                 await handleGauge(args, options);
+                break;
+            case 'pattern':
+                // Handle 'pattern list' specially
+                if (args[0] === 'list') {
+                    await handlePatternList();
+                } else {
+                    await handlePattern(args, options);
+                }
                 break;
         }
         return;
