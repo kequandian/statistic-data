@@ -65,7 +65,7 @@ async function handleCount(args, options) {
 
             // Insert data as a single chunk
             const chunks = [{
-                name: 'count',
+                name: 'total',
                 value: String(value)
             }];
 

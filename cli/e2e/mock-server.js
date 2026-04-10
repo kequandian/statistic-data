@@ -135,9 +135,9 @@ const routes = {
             const existingIndex = data.records.findIndex(
                 r => r.field === fieldName &&
                 r.recordName === chunk.name &&
-                r.recordTuple === chunk.tuple &&
-                r.recordCluster === chunk.cluster &&
-                r.timeline === chunk.timeline
+                r.recordTuple === (chunk.tuple || null) &&
+                r.recordCluster === (chunk.cluster || null) &&
+                r.timeline === (chunk.timeline || null)
             );
 
             if (existingIndex >= 0) {

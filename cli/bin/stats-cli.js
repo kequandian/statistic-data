@@ -31,6 +31,7 @@ const { handlePie } = require('../lib/commands/pie');
 const { handleBar } = require('../lib/commands/bar');
 const { handleCount } = require('../lib/commands/count');
 const { handleDoubleBar } = require('../lib/commands/double-bar');
+const { handleEntry } = require('../lib/commands/entry');
 
 // ==================== Argument Parser ====================
 
@@ -43,26 +44,40 @@ function parseArgs() {
         token: null,
         timeout: null,
         json: false,
-        verbose: false
+        verbose: false,
+        showUrl: false
     };
 
-    // First pass: find the command
+    // First pass: find the command (skip options and their values)
     for (let i = 0; i < args.length; i++) {
         const arg = args[i];
-        if (!arg.startsWith('-')) {
+        if (arg.startsWith('-')) {
+            // Skip option value for options that take values
+            if (arg === '--url' || arg === '--token' || arg === '--timeout') {
+                i++; // Skip next arg (the value)
+            }
+        } else {
+            // Found the command
             options.command = arg;
             options.commandArgs = args.slice(i + 1);
             break;
         }
     }
 
-    // Second pass: parse all options (including those after command)
+    // Second pass: parse all options (including values after command)
     for (let i = 0; i < args.length; i++) {
         const arg = args[i];
 
         switch (arg) {
             case '--url':
-                options.baseUrl = args[++i];
+                // Check if next arg is a value (not another option)
+                const nextArg = args[i + 1];
+                if (nextArg && !nextArg.startsWith('-')) {
+                    options.baseUrl = nextArg;
+                    i++; // Skip next arg
+                } else {
+                    options.showUrl = true;
+                }
                 break;
             case '--token':
                 options.token = args[++i];
@@ -110,6 +125,7 @@ COMMANDS:
   bar                 柱状图数据管理
   count               总数统计
   double-bar          双柱图数据管理
+  entry               条目分组管理
 
 Use 'stats-cli <command> --help' for command-specific help.
 `);
@@ -182,6 +198,23 @@ EXAMPLES:
   stats-cli double-bar sales series "2023" "Q1" with 12000
   stats-cli double-bar sales
   stats-cli double-bar sales --json
+`,
+        entry: `
+ENTRY COMMAND - 条目分组管理
+
+USAGE:
+  stats-cli entry <group> add <entry-name> with <value>
+  stats-cli entry <group> [--url]
+
+DESCRIPTION:
+  在分组下管理多个条目。查询时默认返回 JSON 格式的所有条目数据。
+
+EXAMPLES:
+  stats-cli entry alarm add errors with 3
+  stats-cli entry alarm add warning with 4
+  stats-cli entry alarm add done with 1
+  stats-cli entry alarm
+  stats-cli entry alarm --url
 `
     };
 
@@ -220,6 +253,9 @@ async function main() {
                 break;
             case 'double-bar':
                 await handleDoubleBar(args, options);
+                break;
+            case 'entry':
+                await handleEntry(args, options);
                 break;
             default:
                 console.error(`Unknown command: ${options.command}`);
