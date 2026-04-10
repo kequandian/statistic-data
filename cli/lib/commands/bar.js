@@ -9,6 +9,35 @@ const { StatsAPIClient } = require('../api/client');
 const fieldData = new Map();
 
 /**
+ * Show bar command help
+ */
+function showBarHelp() {
+    console.log(`
+BAR COMMAND - 柱状图数据管理
+
+USAGE:
+  statistic-cli bar <name> add column "<label>" with <value>
+  statistic-cli bar <name> [--json]
+
+SUBCOMMANDS:
+  add column "<label>" with <value>   添加柱状数据
+  (no args)                           查询柱状图数据
+
+OPTIONS:
+  --json                              JSON 格式输出
+
+DESCRIPTION:
+  添加柱状图数据。
+
+EXAMPLES:
+  statistic-cli bar monthly_sales add column "Q1" with 15000
+  statistic-cli bar monthly_sales add column "Q2" with 23000
+  statistic-cli bar monthly_sales
+  statistic-cli bar monthly_sales --json
+`);
+}
+
+/**
  * Handle bar command
  * @param {Array} args - Command arguments
  * @param {Object} options - Command options
@@ -24,9 +53,8 @@ async function handleBar(args, options) {
     const fieldName = args[0];
 
     if (!fieldName) {
-        console.error('Usage: stats-cli bar <name> add column "<label>" with <value> [--json]');
-        console.error('   or: stats-cli bar <name> [--json]');
-        process.exit(1);
+        showBarHelp();
+        return;
     }
 
     // Check if SQL mode

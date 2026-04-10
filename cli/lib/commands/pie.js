@@ -6,6 +6,40 @@
 const { StatsAPIClient } = require('../api/client');
 
 /**
+ * Show pie command help
+ */
+function showPieHelp() {
+    console.log(`
+PIE COMMAND - 饼图数据管理
+
+USAGE:
+  statistic-cli pie <name> add rate "<label>" with <value>
+  statistic-cli pie <name> to percent [--json]
+  statistic-cli pie <name> [--json]
+
+SUBCOMMANDS:
+  add rate "<label>" with <value>   添加数据项
+  to percent                        转换为百分比（总值为100）
+  (no args)                         查询饼图数据
+
+OPTIONS:
+  --json                            JSON 格式输出
+
+DESCRIPTION:
+  添加或转换饼图数据：
+  - add rate: 添加数据项，不检查总数
+  - to percent: 强制将所有数据转换为百分比，总值为100
+
+EXAMPLES:
+  statistic-cli pie user_dist add rate "Category A" with 40
+  statistic-cli pie user_dist add rate "Category B" with 60
+  statistic-cli pie user_dist to percent
+  statistic-cli pie user_dist
+  statistic-cli pie user_dist --json
+`);
+}
+
+/**
  * Handle pie command
  * @param {Array} args - Command arguments
  * @param {Object} options - Command options
@@ -21,10 +55,8 @@ async function handlePie(args, options) {
     const fieldName = args[0];
 
     if (!fieldName) {
-        console.error('Usage: stats-cli pie <name> [add rate "<label>" with <value>] [--json]');
-        console.error('   or: stats-cli pie <name> to percent [--json]');
-        console.error('   or: stats-cli pie <name> [--json]');
-        process.exit(1);
+        showPieHelp();
+        return;
     }
 
     // Check if SQL mode

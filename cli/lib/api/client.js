@@ -5,31 +5,23 @@
 
 const http = require('http');
 const https = require('https');
-const fs = require('fs');
 const path = require('path');
+const dotenv = require('dotenv');
 
-const CONFIG_DIR = path.join(require('os').homedir(), '.config', 'statistic-cli');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+// Load .env file from multiple possible locations
+const envPaths = [
+    path.join(__dirname, '..', '..', '.env'),
+    path.join(process.cwd(), '.env'),
+    path.join(require('os').homedir(), '.env')
+];
+for (const envPath of envPaths) {
+    if (require('fs').existsSync(envPath)) {
+        dotenv.config({ path: envPath });
+        break;
+    }
+}
+
 const DEFAULT_TIMEOUT = 60000;
-
-function loadConfig() {
-    try {
-        if (fs.existsSync(CONFIG_FILE)) {
-            const content = fs.readFileSync(CONFIG_FILE, 'utf8');
-            return JSON.parse(content);
-        }
-    } catch (e) {
-        // Ignore errors
-    }
-    return {};
-}
-
-function saveConfig(config) {
-    if (!fs.existsSync(CONFIG_DIR)) {
-        fs.mkdirSync(CONFIG_DIR, { recursive: true });
-    }
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-}
 
 function httpRequest(options) {
     return new Promise((resolve, reject) => {
@@ -113,14 +105,17 @@ function httpRequest(options) {
 
 class StatsAPIClient {
     constructor(options = {}) {
-        const config = loadConfig();
-
+        // Use .env environment variables for configuration
         this.baseUrl = (options.baseUrl ||
-                        config.base_url ||
                         process.env.STATISTIC_BASE_URL ||
-                        process.env.STATISTIC_CLI_BASE_URL || 'http://localhost:8080').replace(/\/$/, '');
+                        process.env.STATISTIC_CLI_BASE_URL);
 
-        this.token = options.token || config.token || process.env.STATISTIC_TOKEN;
+        if (!this.baseUrl) {
+            throw new Error('STATISTIC_BASE_URL or STATISTIC_CLI_BASE_URL is required. Please set it in .env file.');
+        }
+
+        this.baseUrl = this.baseUrl.replace(/\/$/, '');
+        this.token = options.token || process.env.STATISTIC_TOKEN;
         this.timeout = options.timeout || DEFAULT_TIMEOUT;
         this.verbose = options.verbose || false;
 
@@ -179,8 +174,14 @@ class StatsAPIClient {
         });
     }
 
-    async getFields() {
-        return this._request('GET', '/api/cfg/stat/fields');
+    async getFields(params = {}) {
+        // Set default pagination params
+        const queryParams = {
+            pageNum: 1,
+            pageSize: 1000,  // Get all fields
+            ...params
+        };
+        return this._request('GET', '/api/cfg/stat/fields', { params: queryParams });
     }
 
     async createField(fieldData) {
@@ -198,6 +199,14 @@ class StatsAPIClient {
         return this._request('GET', `/api/adm/stat/groups/${encodeURIComponent(group)}`, { params });
     }
 
+    async getFieldStatistics(field, identifier = null) {
+        const params = {};
+        if (identifier) {
+            params.identifier = identifier;
+        }
+        return this._request('GET', `/api/adm/stat/fields/${encodeURIComponent(field)}`, { params });
+    }
+
     // ==================== Statistics Insert API (NEW) ====================
     async insertStatisticRecord(data) {
         return this._request('POST', '/api/adm/stat/notify', {
@@ -207,6 +216,14 @@ class StatsAPIClient {
                 chunks: data.chunks
             })
         });
+    }
+
+    /**
+     * Delete a statistics record by ID
+     * @param {number} recordId - Record ID to delete
+     */
+    async deleteRecord(recordId) {
+        return this._request('DELETE', `/api/adm/stat/records/${recordId}`);
     }
 
     // ==================== Helper Methods ====================
@@ -219,7 +236,9 @@ class StatsAPIClient {
      */
     async ensureGroupExists(groupName = 'default', title = '默认分组') {
         try {
-            const groups = await this.getGroups();
+            const result = await this.getGroups();
+            // Backend returns: {code: 200, data: [...]}
+            const groups = result?.data || result || [];
             const existingGroup = groups.find(g => g.name === groupName);
 
             if (existingGroup) {
@@ -230,16 +249,16 @@ class StatsAPIClient {
             }
 
             // Create new group
-            const result = await this.createGroup({
+            const createResult = await this.createGroup({
                 name: groupName,
                 title: title,
                 pid: null
             });
 
             if (this.verbose) {
-                console.error(`[DEBUG] Created group '${groupName}' (ID: ${result.id})`);
+                console.error(`[DEBUG] Created group '${groupName}' (ID: ${createResult?.data?.id || createResult?.id})`);
             }
-            return result.id;
+            return createResult?.data?.id || createResult?.id;
         } catch (error) {
             console.error(`Error ensuring group exists: ${error.message}`);
             throw error;
@@ -253,7 +272,11 @@ class StatsAPIClient {
      */
     async ensureFieldExists(fieldData) {
         try {
-            const fields = await this.getFields();
+            // Use groupName parameter to filter fields by group name
+            const result = await this.getFields({ groupId: fieldData.groupName });
+            // Backend returns: {code: 200, data: {records: [...]}}
+            const fields = result?.data?.records || result?.records || result?.data || result || [];
+
             const existingField = fields.find(f => f.field === fieldData.field);
 
             if (existingField) {
@@ -263,16 +286,23 @@ class StatsAPIClient {
                 return existingField.id;
             }
 
-            // Ensure group exists first
-            await this.ensureGroupExists(fieldData.groupName, fieldData.groupTitle || '默认分组');
+            // Ensure group exists first and get the group ID
+            const groupId = await this.ensureGroupExists(fieldData.groupName, fieldData.groupTitle || '默认分组');
+
+            // Prepare field data for creation - ensure both groupId and groupName are set
+            const fieldCreateData = {
+                ...fieldData,
+                groupId: groupId,
+                groupName: fieldData.groupName  // Ensure groupName is explicitly set
+            };
 
             // Create new field
-            const result = await this.createField(fieldData);
+            const createResult = await this.createField(fieldCreateData);
 
             if (this.verbose) {
-                console.error(`[DEBUG] Created field '${fieldData.field}' (ID: ${result.id})`);
+                console.error(`[DEBUG] Created field '${fieldData.field}' (ID: ${createResult.data || createResult})`);
             }
-            return result.id;
+            return createResult.data || createResult;
         } catch (error) {
             console.error(`Error ensuring field exists: ${error.message}`);
             throw error;
@@ -304,4 +334,4 @@ class StatsAPIClient {
     }
 }
 
-module.exports = { StatsAPIClient, loadConfig, saveConfig };
+module.exports = { StatsAPIClient };

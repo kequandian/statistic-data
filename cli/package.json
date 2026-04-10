@@ -5,8 +5,8 @@
   "main": "lib/index.js",
   "bin": {
     "statistic-cli": "./bin/statistic-cli.js",
-    "stat-cli": "./bin/statistic-cli.js",
-    "stats-cli": "./bin/stats-cli.js"
+    "stats-cli": "./bin/statistic-cli.js",
+    "stat-cli": "./bin/statistic-cli.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

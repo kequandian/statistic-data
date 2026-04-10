@@ -31,30 +31,13 @@ for (const envPath of envPaths) {
     }
 }
 
+// Import command handlers
+const { handleTotal } = require('../lib/commands/total');
+const { handlePie } = require('../lib/commands/pie');
+const { handleBar } = require('../lib/commands/bar');
+const { handleGauge } = require('../lib/commands/gauge');
+
 const DEFAULT_TIMEOUT = 60000; // 60 seconds
-const CONFIG_DIR = path.join(require('os').homedir(), '.config', 'statistic-cli');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
-
-// ==================== Configuration Management ====================
-
-function loadConfig() {
-    try {
-        if (fs.existsSync(CONFIG_FILE)) {
-            const content = fs.readFileSync(CONFIG_FILE, 'utf8');
-            return JSON.parse(content);
-        }
-    } catch (e) {
-        // Ignore errors
-    }
-    return {};
-}
-
-function saveConfig(config) {
-    if (!fs.existsSync(CONFIG_DIR)) {
-        fs.mkdirSync(CONFIG_DIR, { recursive: true });
-    }
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-}
 
 // ==================== HTTP Request Wrapper ====================
 
@@ -142,14 +125,17 @@ function httpRequest(options) {
 
 class StatisticAPIClient {
     constructor(options = {}) {
-        const config = loadConfig();
-
+        // Use .env environment variables for configuration
         this.baseUrl = (options.baseUrl ||
-                        config.base_url ||
                         process.env.STATISTIC_BASE_URL ||
-                        process.env.STATISTIC_CLI_BASE_URL || 'http://localhost:8080/api/adm/stat').replace(/\/$/, '');
+                        process.env.STATISTIC_CLI_BASE_URL);
 
-        this.token = options.token || config.token || process.env.STATISTIC_TOKEN;
+        if (!this.baseUrl) {
+            throw new Error('STATISTIC_BASE_URL or STATISTIC_CLI_BASE_URL is required. Please set it in .env file.');
+        }
+
+        this.baseUrl = this.baseUrl.replace(/\/$/, '');
+        this.token = options.token || process.env.STATISTIC_TOKEN;
         this.timeout = options.timeout || DEFAULT_TIMEOUT;
         this.verbose = options.verbose || false;
 
@@ -434,7 +420,14 @@ function parseArgs() {
 
         switch (arg) {
             case '--url':
-                options.baseUrl = args[++i];
+                // Check if this is a show URL flag or a base URL
+                const nextArg = args[i + 1];
+                if (nextArg && !nextArg.startsWith('--')) {
+                    options.baseUrl = nextArg;
+                    i++;
+                } else {
+                    options.showUrl = true;
+                }
                 break;
             case '--token':
                 options.token = args[++i];
@@ -503,13 +496,11 @@ GLOBAL OPTIONS:
   -h, --help          Show help
 
 COMMANDS:
-  config              配置管理
-  meta                元数据管理
-  stat                统计数据查询
-  group               分组管理
-  field               字段管理
-  export              数据导出
-  chart               图表预览
+  primary             主要功能命令组
+  total               总数统计
+  pie                 饼图数据管理
+  bar                 柱状图数据管理
+  gauge               仪表盘数据管理
 
 Use 'statistic-cli <command> --help' for command-specific help.
 `);
@@ -520,11 +511,153 @@ Use 'statistic-cli <command> --help' for command-specific help.
 
 function showCommandHelp(command) {
     const helps = {
+        total: `
+TOTAL COMMAND - 总数统计
+
+USAGE:
+  statistic-cli total <name> with <value>
+  statistic-cli total <name> [--json]
+
+DESCRIPTION:
+  添加或查询总数统计数据。
+
+EXAMPLES:
+  statistic-cli total total_users with 1523
+  statistic-cli total total_users
+  statistic-cli total total_users --json
+`,
+        pie: `
+PIE COMMAND - 饼图数据管理
+
+USAGE:
+  statistic-cli pie <name> add rate "<label>" with <value>
+  statistic-cli pie <name> to percent [--json]
+  statistic-cli pie <name> [--json]
+
+DESCRIPTION:
+  添加或转换饼图数据：
+  - add rate: 添加数据项，不检查总数
+  - to percent: 强制将所有数据转换为百分比，总值为100
+
+EXAMPLES:
+  statistic-cli pie user_dist add rate "Category A" with 40
+  statistic-cli pie user_dist add rate "Category B" with 60
+  statistic-cli pie user_dist to percent
+  statistic-cli pie user_dist
+  statistic-cli pie user_dist --json
+`,
+        bar: `
+BAR COMMAND - 柱状图数据管理
+
+USAGE:
+  statistic-cli bar <name> add column "<label>" with <value>
+  statistic-cli bar <name> [--json]
+
+DESCRIPTION:
+  添加柱状图数据。
+
+EXAMPLES:
+  statistic-cli bar monthly_sales add column "Q1" with 15000
+  statistic-cli bar monthly_sales add column "Q2" with 23000
+  statistic-cli bar monthly_sales
+  statistic-cli bar monthly_sales --json
+`,
+        gauge: `
+GAUGE COMMAND - 仪表盘数据管理
+
+USAGE:
+  statistic-cli gauge <group> add <entry-name> with <value>
+  statistic-cli gauge <group> [--url]
+
+DESCRIPTION:
+  在分组下管理多个条目。查询时默认返回 JSON 格式的所有条目数据。
+
+EXAMPLES:
+  statistic-cli gauge alarm add errors with 3
+  statistic-cli gauge alarm add warning with 4
+  statistic-cli gauge alarm add done with 1
+  statistic-cli gauge alarm
+  statistic-cli gauge alarm --url
+`,
+        primary: `
+PRIMARY COMMAND - 主要功能命令组
+
+USAGE:
+  statistic-cli primary <subcommand> [args]
+
+SUBCOMMANDS:
+  config              配置管理
+  meta                元数据管理
+  stat                统计数据查询
+  group               分组管理
+  field               字段管理
+  export              数据导出
+  chart               图表预览
+
+Use 'statistic-cli primary <subcommand> --help' for subcommand-specific help.
+`
+    };
+
+    console.log(helps[command] || `Unknown command: ${command}`);
+}
+
+// ==================== Command Handlers ====================
+
+async function handlePrimary(args, options, client) {
+    const subcommand = args[0];
+
+    // Handle --help as first arg (i.e., "statistic-cli primary --help")
+    if (subcommand === '--help' || subcommand === '-h' || !subcommand) {
+        showCommandHelp('primary');
+        return;
+    }
+
+    // Check for subcommand help after subcommand (i.e., "statistic-cli primary config --help")
+    const helpIndex = args.indexOf('--help');
+    const helpIndexShort = args.indexOf('-h');
+
+    if (helpIndex !== -1 || helpIndexShort !== -1) {
+        showPrimarySubcommandHelp(subcommand);
+        return;
+    }
+
+    // Route to subcommand handlers
+    switch (subcommand) {
+        case 'config':
+            await handleConfig(args.slice(1), options);
+            break;
+        case 'meta':
+            await handleMeta(args.slice(1), options, client);
+            break;
+        case 'stat':
+            await handleStat(args.slice(1), options, client);
+            break;
+        case 'group':
+            await handleGroup(args.slice(1), options, client);
+            break;
+        case 'field':
+            await handleField(args.slice(1), options, client);
+            break;
+        case 'export':
+            await handleExport(args.slice(1), options, client);
+            break;
+        case 'chart':
+            await handleChart(args.slice(1), options, client);
+            break;
+        default:
+            console.error(`Unknown primary subcommand: ${subcommand}`);
+            showCommandHelp('primary');
+            break;
+    }
+}
+
+function showPrimarySubcommandHelp(subcommand) {
+    const helps = {
         config: `
 CONFIG COMMAND - 配置管理
 
 USAGE:
-  statistic-cli config <subcommand> [args]
+  statistic-cli primary config <subcommand> [args]
 
 SUBCOMMANDS:
   show                显示当前配置
@@ -535,17 +668,17 @@ SUBCOMMANDS:
   test                测试连接
 
 EXAMPLES:
-  statistic-cli config show
-  statistic-cli config set base_url http://localhost:8080/api/adm/stat
-  statistic-cli config set token your-token-here
-  statistic-cli config get base_url
-  statistic-cli config test
+  statistic-cli primary config show
+  statistic-cli primary config set base_url http://localhost:8080/api/adm/stat
+  statistic-cli primary config set token your-token-here
+  statistic-cli primary config get base_url
+  statistic-cli primary config test
 `,
         meta: `
 META COMMAND - 元数据管理
 
 USAGE:
-  statistic-cli meta <subcommand> [args]
+  statistic-cli primary meta <subcommand> [args]
 
 SUBCOMMANDS:
   show <field>        显示元数据详情
@@ -558,17 +691,17 @@ OPTIONS:
   --yaml              YAML 格式输出
 
 EXAMPLES:
-  statistic-cli meta show daily_report
-  statistic-cli meta list
-  statistic-cli meta list --pattern user
-  statistic-cli meta sql user_statistics
-  statistic-cli meta info daily_report
+  statistic-cli primary meta show daily_report
+  statistic-cli primary meta list
+  statistic-cli primary meta list --pattern user
+  statistic-cli primary meta sql user_statistics
+  statistic-cli primary meta info daily_report
 `,
         stat: `
 STAT COMMAND - 统计数据查询
 
 USAGE:
-  statistic-cli stat <subcommand> [args]
+  statistic-cli primary stat <subcommand> [args]
 
 SUBCOMMANDS:
   get <group>         获取分组统计数据
@@ -588,17 +721,17 @@ OPTIONS:
   --table             表格格式输出
 
 EXAMPLES:
-  statistic-cli stat get user_stats
-  statistic-cli stat get user_stats --identifier 123
-  statistic-cli stat query login_count --threshold 1000
-  statistic-cli stat compare daily_report --from 2024-01-01 --to 2024-01-31
-  statistic-cli stat trend user_growth --period 30d
+  statistic-cli primary stat get user_stats
+  statistic-cli primary stat get user_stats --identifier 123
+  statistic-cli primary stat query login_count --threshold 1000
+  statistic-cli primary stat compare daily_report --from 2024-01-01 --to 2024-01-31
+  statistic-cli primary stat trend user_growth --period 30d
 `,
         group: `
 GROUP COMMAND - 分组管理
 
 USAGE:
-  statistic-cli group <subcommand> [args]
+  statistic-cli primary group <subcommand> [args]
 
 SUBCOMMANDS:
   list [--tree]       列出所有分组
@@ -609,16 +742,16 @@ OPTIONS:
   --json              JSON 格式输出
 
 EXAMPLES:
-  statistic-cli group list
-  statistic-cli group list --tree
-  statistic-cli group show user_stats
-  statistic-cli group fields user_stats
+  statistic-cli primary group list
+  statistic-cli primary group list --tree
+  statistic-cli primary group show user_stats
+  statistic-cli primary group fields user_stats
 `,
         field: `
 FIELD COMMAND - 字段管理
 
 USAGE:
-  statistic-cli field <subcommand> [args]
+  statistic-cli primary field <subcommand> [args]
 
 SUBCOMMANDS:
   list [--group]      列出所有字段
@@ -629,16 +762,16 @@ OPTIONS:
   --json              JSON 格式输出
 
 EXAMPLES:
-  statistic-cli field list
-  statistic-cli field list --group user_stats
-  statistic-cli field show user_login_count
-  statistic-cli field summary success_rate
+  statistic-cli primary field list
+  statistic-cli primary field list --group user_stats
+  statistic-cli primary field show user_login_count
+  statistic-cli primary field summary success_rate
 `,
         export: `
 EXPORT COMMAND - 数据导出
 
 USAGE:
-  statistic-cli export <format> <source> [args]
+  statistic-cli primary export <format> <source> [args]
 
 FORMATS:
   pdf <report>        导出 PDF 报告
@@ -650,15 +783,15 @@ OPTIONS:
   --format <format>   数据格式 (pretty|compact)
 
 EXAMPLES:
-  statistic-cli export pdf daily_report -o report.pdf
-  statistic-cli export excel user_statistics -o data.xlsx
-  statistic-cli export data user_stats -o stats.json
+  statistic-cli primary export pdf daily_report -o report.pdf
+  statistic-cli primary export excel user_statistics -o data.xlsx
+  statistic-cli primary export data user_stats -o stats.json
 `,
         chart: `
 CHART COMMAND - 图表预览
 
 USAGE:
-  statistic-cli chart <subcommand> [args]
+  statistic-cli primary chart <subcommand> [args]
 
 SUBCOMMANDS:
   preview <field>     生成图表预览
@@ -670,35 +803,29 @@ OPTIONS:
   --period <7d|30d>   时间周期
 
 EXAMPLES:
-  statistic-cli chart preview user_distribution --type pie
-  statistic-cli chart preview login_count --type bar
-  statistic-cli chart compare field1,field2,field3 --type bar
+  statistic-cli primary chart preview user_distribution --type pie
+  statistic-cli primary chart preview login_count --type bar
+  statistic-cli primary chart compare field1,field2,field3 --type bar
 `
     };
 
-    console.log(helps[command] || `Unknown command: ${command}`);
+    console.log(helps[subcommand] || `Unknown primary subcommand: ${subcommand}`);
 }
 
-// ==================== Command Handlers ====================
-
 async function handleConfig(args, options) {
-    const config = loadConfig();
     const subcommand = args[0];
 
     switch (subcommand) {
         case 'show':
-            console.log('Current configuration:');
-            console.log(JSON.stringify(config, null, 2));
+            console.log('Current configuration (from .env):');
+            console.log(`  STATISTIC_BASE_URL=${process.env.STATISTIC_BASE_URL || 'not set'}`);
+            console.log(`  STATISTIC_TOKEN=${process.env.STATISTIC_TOKEN ? '***' : 'not set'}`);
+            console.log(`\n.env file location: ${path.join(__dirname, '..', '.env')}`);
             break;
 
         case 'set':
-            if (args.length < 3) {
-                console.error('Usage: statistic-cli config set <key> <value>');
-                process.exit(1);
-            }
-            config[args[1]] = args[2];
-            saveConfig(config);
-            console.log(`✓ Set: ${args[1]} = ${args[2]}`);
+            console.log('Note: Please edit the .env file directly to set configuration values.');
+            console.log(`.env file location: ${path.join(__dirname, '..', '.env')}`);
             break;
 
         case 'get':
@@ -706,28 +833,24 @@ async function handleConfig(args, options) {
                 console.error('Usage: statistic-cli config get <key>');
                 process.exit(1);
             }
-            const value = config[args[1]];
+            const key = args[1];
+            const value = process.env[key];
             if (value !== undefined) {
-                console.log(value);
+                console.log(`${key}=${value}`);
             } else {
-                console.log(`Key '${args[1]}' not found in config`);
+                console.log(`Key '${key}' not found in environment`);
             }
             break;
 
         case 'list':
-            console.log('Configuration:');
-            Object.entries(config).forEach(([k, v]) => {
-                console.log(`  ${k}: ${v}`);
-            });
+            console.log('Configuration (from .env):');
+            console.log(`  STATISTIC_BASE_URL=${process.env.STATISTIC_BASE_URL || 'not set'}`);
+            console.log(`  STATISTIC_TOKEN=${process.env.STATISTIC_TOKEN ? '***' : 'not set'}`);
             break;
 
         case 'clear':
-            if (fs.existsSync(CONFIG_FILE)) {
-                fs.unlinkSync(CONFIG_FILE);
-                console.log('✓ Configuration cleared');
-            } else {
-                console.log('No configuration file found');
-            }
+            console.log('Note: Please edit the .env file directly to clear configuration values.');
+            console.log(`.env file location: ${path.join(__dirname, '..', '.env')}`);
             break;
 
         case 'test':
@@ -1253,65 +1376,71 @@ async function handleChart(args, options, client) {
 async function main() {
     const options = parseArgs();
 
-    if (options.showHelp || !options.command) {
-        showHelp(options.command);
+    if (!options.command) {
+        showHelp(null);
         process.exit(0);
     }
 
-    // Handle config command (doesn't need API client)
-    if (options.command === 'config') {
-        await handleConfig(options.commandArgs, options);
-        return;
-    }
-
-    // Create API client for other commands
-    let client;
-    try {
-        client = new StatisticAPIClient({
-            baseUrl: options.baseUrl,
-            token: options.token,
-            timeout: options.timeout,
-            verbose: options.verbose
-        });
-    } catch (err) {
-        console.error(`Error: ${err.message}`);
-        showHelp();
-        process.exit(1);
-    }
-
-    const args = options.commandArgs || [];
-
-    // Check for command-specific help
-    if (hasFlag(args, '--help', '-h')) {
-        showCommandHelp(options.command);
-        return;
-    }
-
-    // Route to command handlers
-    switch (options.command) {
-        case 'meta':
-            await handleMeta(args, options, client);
-            break;
-        case 'stat':
-            await handleStat(args, options, client);
-            break;
-        case 'group':
-            await handleGroup(args, options, client);
-            break;
-        case 'field':
-            await handleField(args, options, client);
-            break;
-        case 'export':
-            await handleExport(args, options, client);
-            break;
-        case 'chart':
-            await handleChart(args, options, client);
-            break;
-        default:
-            console.error(`Unknown command: ${options.command}`);
+    // Handle primary command (subcommands that need API client)
+    // For primary command, handle --help in subcommands, not globally
+    if (options.command === 'primary') {
+        // Create API client for primary subcommands
+        let client;
+        try {
+            client = new StatisticAPIClient({
+                baseUrl: options.baseUrl,
+                token: options.token,
+                timeout: options.timeout,
+                verbose: options.verbose
+            });
+        } catch (err) {
+            console.error(`Error: ${err.message}`);
             showHelp();
             process.exit(1);
+        }
+
+        const args = options.commandArgs || [];
+
+        // Handle --help for primary command at command level
+        if (options.showHelp && args.length === 0) {
+            showCommandHelp('primary');
+            process.exit(0);
+        }
+
+        await handlePrimary(args, options, client);
+        return;
     }
+
+    // For other commands, handle --help globally
+    if (options.showHelp) {
+        showCommandHelp(options.command);
+        process.exit(0);
+    }
+
+    // Handle total, pie, bar, gauge commands (use their own clients)
+    if (['total', 'pie', 'bar', 'gauge'].includes(options.command)) {
+        const args = options.commandArgs || [];
+        switch (options.command) {
+            case 'total':
+                await handleTotal(args, options);
+                break;
+            case 'pie':
+                await handlePie(args, options);
+                break;
+            case 'bar':
+                await handleBar(args, options);
+                break;
+            case 'gauge':
+                await handleGauge(args, options);
+                break;
+        }
+        return;
+    }
+
+    // Unknown command
+    console.error(`Unknown command: ${options.command}`);
+    showHelp();
+    process.exit(1);
 }
 
 // Run main function

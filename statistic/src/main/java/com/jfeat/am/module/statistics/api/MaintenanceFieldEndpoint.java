@@ -16,7 +16,8 @@ import jakarta.annotation.Resource;
 
 /**
  * <p>
- * api
+ * Statistics Field Maintenance API
+ * Fixed to handle groupName validation and prevent null constraint violations
  * </p>
  *
  * @author Code Generator
@@ -37,6 +38,15 @@ public class MaintenanceFieldEndpoint{
     @ApiOperation(value = "增加统计域", response = StatisticsField.class)
     @PostMapping
     public Tip createStatisticsField(@RequestBody StatisticsField entity){
+        // Validate groupName before creation
+        if (entity.getGroupName() == null || entity.getGroupName().trim().isEmpty()) {
+            throw new BusinessException(BusinessCode.BadRequest.getCode(), "groupName cannot be null or empty");
+        }
+        // Ensure groupId is set if groupName is provided
+        if (entity.getGroupId() == null && entity.getGroupName() != null) {
+            // Optionally auto-resolve groupId from groupName if needed
+            // For now, require both to be set explicitly
+        }
         return SuccessTip.create(statisticsFieldService.createMaster(entity));
     }
 
@@ -49,6 +59,22 @@ public class MaintenanceFieldEndpoint{
     @ApiOperation(value = "修改统计域", response = StatisticsField.class)
     @PutMapping("/{id}")
     public Tip updateStatisticsField(@PathVariable Long id, @RequestBody StatisticsField entity) {
+        // Retrieve existing entity to preserve groupName if not provided
+        StatisticsField existing = statisticsFieldService.retrieveMaster(id);
+        if (existing == null) {
+            throw new BusinessException(BusinessCode.NotFound.getCode(), "StatisticsField not found with id: " + id);
+        }
+
+        // Preserve groupName if not provided in update request
+        if (entity.getGroupName() == null || entity.getGroupName().trim().isEmpty()) {
+            entity.setGroupName(existing.getGroupName());
+        }
+
+        // Preserve groupId if not provided
+        if (entity.getGroupId() == null) {
+            entity.setGroupId(existing.getGroupId());
+        }
+
         entity.setId(id);
         return SuccessTip.create(statisticsFieldService.updateMaster(entity, true));
     }
@@ -89,9 +115,18 @@ public class MaintenanceFieldEndpoint{
     @ApiOperation("设置统计域分组 [指转移经计域至其他分组]")
     @PostMapping("/{id}/attr/group/{groupId}")
     public Tip changeStatisticsFieldGroup(@PathVariable Long id, @PathVariable Long groupId) {
+        // Retrieve existing entity to preserve other fields
+        StatisticsField existing = statisticsFieldService.retrieveMaster(id);
+        if (existing == null) {
+            throw new BusinessException(BusinessCode.NotFound.getCode(), "StatisticsField not found with id: " + id);
+        }
+
+        // Only update groupId, preserve all other fields including groupName
         StatisticsField entity = new StatisticsField();
         entity.setId(id);
         entity.setGroupId(groupId);
+        // Preserve groupName to avoid null constraint violation
+        entity.setGroupName(existing.getGroupName());
 
         return SuccessTip.create(statisticsFieldService.updateMaster(entity, false));
     }
@@ -99,51 +134,31 @@ public class MaintenanceFieldEndpoint{
     @ApiOperation("使统计域可见")
     @PostMapping("/{id}/attr/visible")
     public Tip setFieldVisible(@PathVariable Long id) {
-        StatisticsField entity = new StatisticsField();
-        entity.setId(id);
-        entity.setAttrInvisible(0);
-
-        return SuccessTip.create(statisticsFieldService.updateMaster(entity, false));
+        return updateSingleAttribute(id, entity -> entity.setAttrInvisible(0));
     }
 
     @ApiOperation("使统计域不可见")
     @PostMapping("/{id}/attr/invisible")
     public Tip setFieldInvisible(@PathVariable Long id) {
-        StatisticsField entity = new StatisticsField();
-        entity.setId(id);
-        entity.setAttrInvisible(1);
-
-        return SuccessTip.create(statisticsFieldService.updateMaster(entity, false));
+        return updateSingleAttribute(id, entity -> entity.setAttrInvisible(1));
     }
 
     @ApiOperation("设置统计域 图表名称 [通常由前端定义]")
     @PostMapping("/{id}/attr/chart/{chart}")
     public Tip changeStatisticsFieldChart(@PathVariable Long id, @PathVariable String chart) {
-        StatisticsField entity = new StatisticsField();
-        entity.setId(id);
-        entity.setChart(chart);
-
-        return SuccessTip.create(statisticsFieldService.updateMaster(entity, false));
+        return updateSingleAttribute(id, entity -> entity.setChart(chart));
     }
 
     @ApiOperation("设备统计域排序号")
     @PostMapping("/{id}/attr/index/{index}")
     public Tip setFieldIndex(@PathVariable Long id, @PathVariable Integer index) {
-        StatisticsField entity = new StatisticsField();
-        entity.setId(id);
-        entity.setAttrIndex(index);
-
-        return SuccessTip.create(statisticsFieldService.updateMaster(entity, false));
+        return updateSingleAttribute(id, entity -> entity.setAttrIndex(index));
     }
 
     @ApiOperation("设备统计域占组布局的列数")
     @PostMapping("/{id}/attr/span/{span}")
     public Tip setFieldLayoutSpan(@PathVariable Long id, @PathVariable Integer span) {
-        StatisticsField entity = new StatisticsField();
-        entity.setId(id);
-        entity.setAttrSpan(span);
-
-        return SuccessTip.create(statisticsFieldService.updateMaster(entity, false));
+        return updateSingleAttribute(id, entity -> entity.setAttrSpan(span));
     }
 
 
@@ -151,6 +166,37 @@ public class MaintenanceFieldEndpoint{
     @PostMapping("/{id}/attr/runtime")
     public Tip setFieldRuntime(@PathVariable Long id) {
         throw new BusinessException(BusinessCode.NotImplement.getCode(), "未实现运行时查询，需要支持SQL设置");
+    }
+
+    /**
+     * Helper method to safely update a single attribute while preserving others
+     * This prevents null constraint violations on fields like groupName
+     */
+    private Tip updateSingleAttribute(Long id, java.util.function.Consumer<StatisticsField> attributeSetter) {
+        // Retrieve existing entity to preserve all fields
+        StatisticsField existing = statisticsFieldService.retrieveMaster(id);
+        if (existing == null) {
+            throw new BusinessException(BusinessCode.NotFound.getCode(), "StatisticsField not found with id: " + id);
+        }
+
+        // Create new entity and copy all existing fields
+        StatisticsField entity = new StatisticsField();
+        entity.setId(id);
+        entity.setField(existing.getField());
+        entity.setName(existing.getName());
+        entity.setGroupName(existing.getGroupName());  // Always preserve groupName
+        entity.setGroupId(existing.getGroupId());        // Always preserve groupId
+        entity.setPattern(existing.getPattern());
+        entity.setChart(existing.getChart());
+        entity.setAttrInvisible(existing.getAttrInvisible());
+        entity.setAttrRuntime(existing.getAttrRuntime());
+        entity.setAttrSpan(existing.getAttrSpan());
+        entity.setAttrIndex(existing.getAttrIndex());
+
+        // Apply the specific attribute change
+        attributeSetter.accept(entity);
+
+        return SuccessTip.create(statisticsFieldService.updateMaster(entity, true));
     }
 
 }

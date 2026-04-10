@@ -6,6 +6,34 @@
 const { StatsAPIClient } = require('../api/client');
 
 /**
+ * Show total command help
+ */
+function showTotalHelp() {
+    console.log(`
+TOTAL COMMAND - 总数统计
+
+USAGE:
+  statistic-cli total <name> with <value>
+  statistic-cli total <name> [--json]
+
+SUBCOMMANDS:
+  with <value>                     添加总数数据
+  (no args)                        查询总数数据
+
+OPTIONS:
+  --json                           JSON 格式输出
+
+DESCRIPTION:
+  添加或查询总数统计数据。
+
+EXAMPLES:
+  statistic-cli total total_users with 1523
+  statistic-cli total total_users
+  statistic-cli total total_users --json
+`);
+}
+
+/**
  * Handle total command
  * @param {Array} args - Command arguments
  * @param {Object} options - Command options
@@ -21,10 +49,8 @@ async function handleTotal(args, options) {
     const fieldName = args[0];
 
     if (!fieldName) {
-        console.error('Usage: stats-cli total <name> with <value> [--json]');
-        console.error('   or: stats-cli total <name> --sql "<query>" [--json]');
-        console.error('   or: stats-cli total <name> [--json]');
-        process.exit(1);
+        showTotalHelp();
+        return;
     }
 
     // Check if SQL mode
