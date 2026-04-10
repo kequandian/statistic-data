@@ -3,10 +3,9 @@
  * Stats CLI - 统计数据命令行工具
  *
  * 支持功能:
+ * - total: 总数统计
  * - pie: 饼图数据管理
  * - bar: 柱状图数据管理
- * - count: 总数统计
- * - double-bar: 双柱图数据管理
  */
 
 const fs = require('fs');
@@ -27,11 +26,9 @@ for (const envPath of envPaths) {
 }
 
 // Import command handlers
+const { handleTotal } = require('../lib/commands/total');
 const { handlePie } = require('../lib/commands/pie');
 const { handleBar } = require('../lib/commands/bar');
-const { handleCount } = require('../lib/commands/count');
-const { handleDoubleBar } = require('../lib/commands/double-bar');
-const { handleEntry } = require('../lib/commands/entry');
 
 // ==================== Argument Parser ====================
 
@@ -121,11 +118,9 @@ GLOBAL OPTIONS:
   -h, --help          Show help
 
 COMMANDS:
+  total               总数统计
   pie                 饼图数据管理
   bar                 柱状图数据管理
-  count               总数统计
-  double-bar          双柱图数据管理
-  entry               条目分组管理
 
 Use 'stats-cli <command> --help' for command-specific help.
 `);
@@ -136,19 +131,38 @@ Use 'stats-cli <command> --help' for command-specific help.
 
 function showCommandHelp(command) {
     const helps = {
+        total: `
+TOTAL COMMAND - 总数统计
+
+USAGE:
+  stats-cli total <name> with <value>
+  stats-cli total <name> [--json]
+
+DESCRIPTION:
+  添加或查询总数统计数据。
+
+EXAMPLES:
+  stats-cli total total_users with 1523
+  stats-cli total total_users
+  stats-cli total total_users --json
+`,
         pie: `
 PIE COMMAND - 饼图数据管理
 
 USAGE:
-  stats-cli pie <name> rate "<label>" with <value>
+  stats-cli pie <name> add rate "<label>" with <value>
+  stats-cli pie <name> to percent [--json]
   stats-cli pie <name> [--json]
 
 DESCRIPTION:
-  添加饼图数据。数据总和必须在 80-120 之间。
+  添加或转换饼图数据：
+  - add rate: 添加数据项，不检查总数
+  - to percent: 强制将所有数据转换为百分比，总值为100
 
 EXAMPLES:
-  stats-cli pie user_dist rate "Category A" with 40
-  stats-cli pie user_dist rate "Category B" with 40
+  stats-cli pie user_dist add rate "Category A" with 40
+  stats-cli pie user_dist add rate "Category B" with 60
+  stats-cli pie user_dist to percent
   stats-cli pie user_dist
   stats-cli pie user_dist --json
 `,
@@ -156,65 +170,17 @@ EXAMPLES:
 BAR COMMAND - 柱状图数据管理
 
 USAGE:
-  stats-cli bar <name> column "<label>" with <value>
+  stats-cli bar <name> add column "<label>" with <value>
   stats-cli bar <name> [--json]
 
 DESCRIPTION:
   添加柱状图数据。
 
 EXAMPLES:
-  stats-cli bar monthly_sales column "Q1" with 15000
-  stats-cli bar monthly_sales column "Q2" with 23000
+  stats-cli bar monthly_sales add column "Q1" with 15000
+  stats-cli bar monthly_sales add column "Q2" with 23000
   stats-cli bar monthly_sales
   stats-cli bar monthly_sales --json
-`,
-        count: `
-COUNT COMMAND - 总数统计
-
-USAGE:
-  stats-cli count <name> with <value>
-  stats-cli count <name> [--json]
-
-DESCRIPTION:
-  添加或查询总数统计数据。
-
-EXAMPLES:
-  stats-cli count total_users with 1523
-  stats-cli count total_users
-  stats-cli count total_users --json
-`,
-        'double-bar': `
-DOUBLE-BAR COMMAND - 双柱图数据管理
-
-USAGE:
-  stats-cli double-bar <name> series "<series>" "<column>" with <value>
-  stats-cli double-bar <name> [--json]
-
-DESCRIPTION:
-  添加双柱图数据。需要恰好 2 个系列的数据。
-
-EXAMPLES:
-  stats-cli double-bar sales series "2024" "Q1" with 15000
-  stats-cli double-bar sales series "2023" "Q1" with 12000
-  stats-cli double-bar sales
-  stats-cli double-bar sales --json
-`,
-        entry: `
-ENTRY COMMAND - 条目分组管理
-
-USAGE:
-  stats-cli entry <group> add <entry-name> with <value>
-  stats-cli entry <group> [--url]
-
-DESCRIPTION:
-  在分组下管理多个条目。查询时默认返回 JSON 格式的所有条目数据。
-
-EXAMPLES:
-  stats-cli entry alarm add errors with 3
-  stats-cli entry alarm add warning with 4
-  stats-cli entry alarm add done with 1
-  stats-cli entry alarm
-  stats-cli entry alarm --url
 `
     };
 
@@ -242,20 +208,14 @@ async function main() {
     // Route to command handlers
     try {
         switch (options.command) {
+            case 'total':
+                await handleTotal(args, options);
+                break;
             case 'pie':
                 await handlePie(args, options);
                 break;
             case 'bar':
                 await handleBar(args, options);
-                break;
-            case 'count':
-                await handleCount(args, options);
-                break;
-            case 'double-bar':
-                await handleDoubleBar(args, options);
-                break;
-            case 'entry':
-                await handleEntry(args, options);
                 break;
             default:
                 console.error(`Unknown command: ${options.command}`);

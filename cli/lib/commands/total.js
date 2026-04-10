@@ -1,16 +1,16 @@
 /**
- * Count Command Handler
- * Handles count related commands
+ * Total Command Handler
+ * Handles total related commands
  */
 
 const { StatsAPIClient } = require('../api/client');
 
 /**
- * Handle count command
+ * Handle total command
  * @param {Array} args - Command arguments
  * @param {Object} options - Command options
  */
-async function handleCount(args, options) {
+async function handleTotal(args, options) {
     const client = new StatsAPIClient({
         baseUrl: options.baseUrl,
         token: options.token,
@@ -21,9 +21,9 @@ async function handleCount(args, options) {
     const fieldName = args[0];
 
     if (!fieldName) {
-        console.error('Usage: stats-cli count <name> with <value> [--json]');
-        console.error('   or: stats-cli count <name> --sql "<query>" [--json]');
-        console.error('   or: stats-cli count <name> [--json]');
+        console.error('Usage: stats-cli total <name> with <value> [--json]');
+        console.error('   or: stats-cli total <name> --sql "<query>" [--json]');
+        console.error('   or: stats-cli total <name> [--json]');
         process.exit(1);
     }
 
@@ -31,7 +31,7 @@ async function handleCount(args, options) {
     const sqlIndex = args.indexOf('--sql');
     if (sqlIndex !== -1 && args[sqlIndex + 1]) {
         const sql = args[sqlIndex + 1];
-        console.log('SQL mode for count is not yet implemented.');
+        console.log('SQL mode for total is not yet implemented.');
         console.log(`SQL: ${sql}`);
         return;
     }
@@ -40,11 +40,11 @@ async function handleCount(args, options) {
     const withIndex = args.indexOf('with');
 
     if (withIndex !== -1) {
-        // Adding data: stats-cli count <name> with 1523
+        // Adding data: stats-cli total <name> with 1523
         const value = args[withIndex + 1];
 
         if (value === undefined) {
-            console.error('Usage: stats-cli count <name> with <value>');
+            console.error('Usage: stats-cli total <name> with <value>');
             process.exit(1);
         }
 
@@ -70,14 +70,14 @@ async function handleCount(args, options) {
             }];
 
             await client.insertData(fieldName, chunks);
-            console.log(`Count data inserted successfully for field '${fieldName}'`);
+            console.log(`Total data inserted successfully for field '${fieldName}'`);
             console.log(`Value: ${value}`);
         } catch (error) {
             console.error(`Error inserting data: ${error.message}`);
             process.exit(1);
         }
     } else {
-        // Query mode: stats-cli count <name>
+        // Query mode: stats-cli total <name>
         try {
             const result = await client.getStatisticByGroup('default');
 
@@ -90,7 +90,7 @@ async function handleCount(args, options) {
             if (result && result.data) {
                 const fieldData = result.data.find(d => d.field === fieldName);
                 if (fieldData && fieldData.records) {
-                    console.log(`\n=== Count: ${fieldName} ===`);
+                    console.log(`\n=== Total: ${fieldName} ===`);
                     fieldData.records.forEach(record => {
                         console.log(`  ${record.recordName}: ${record.recordValue}`);
                     });
@@ -107,4 +107,4 @@ async function handleCount(args, options) {
     }
 }
 
-module.exports = { handleCount };
+module.exports = { handleTotal };

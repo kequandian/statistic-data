@@ -4,7 +4,6 @@
  */
 
 const { StatsAPIClient } = require('../api/client');
-const PieValidator = require('../validators/pie');
 
 /**
  * Handle pie command
@@ -22,8 +21,8 @@ async function handlePie(args, options) {
     const fieldName = args[0];
 
     if (!fieldName) {
-        console.error('Usage: stats-cli pie <name> [rate "<label>" with <value>] [--json]');
-        console.error('   or: stats-cli pie <name> --sql "<query>" [--json]');
+        console.error('Usage: stats-cli pie <name> [add rate "<label>" with <value>] [--json]');
+        console.error('   or: stats-cli pie <name> to percent [--json]');
         console.error('   or: stats-cli pie <name> [--json]');
         process.exit(1);
     }
@@ -37,84 +36,189 @@ async function handlePie(args, options) {
         return;
     }
 
-    // Check if adding data (rate "<label>" with <value>)
+    // Check for "to percent" command
+    const toIndex = args.indexOf('to');
+    const percentIndex = args.indexOf('percent');
+
+    if (toIndex !== -1 && percentIndex !== -1 && toIndex < percentIndex) {
+        // Convert to percentage: stats-cli pie <name> to percent
+        await convertToPercent(client, fieldName, options);
+        return;
+    }
+
+    // Check if adding data (add rate "<label>" with <value>)
+    const addIndex = args.indexOf('add');
     const rateIndex = args.indexOf('rate');
     const withIndex = args.indexOf('with');
 
-    if (rateIndex !== -1 && withIndex !== -1 && rateIndex < withIndex) {
-        // Adding data: stats-cli pie <name> rate "A" with 40
+    if (addIndex !== -1 && rateIndex !== -1 && withIndex !== -1 && addIndex < rateIndex && rateIndex < withIndex) {
+        // Adding data: stats-cli pie <name> add rate "A" with 40
         const label = args[rateIndex + 1];
         const value = parseFloat(args[withIndex + 1]);
 
         if (!label || isNaN(value)) {
-            console.error('Usage: stats-cli pie <name> rate "<label>" with <value>');
+            console.error('Usage: stats-cli pie <name> add rate "<label>" with <value>');
             process.exit(1);
         }
 
-        // Create single item array for validation
-        const items = [{ name: label, value: value }];
-
-        // Validate single item (will pass if value is reasonable)
-        // For E2E testing, we insert immediately instead of accumulating
-        try {
-            // Ensure field exists
-            await client.ensureFieldExists({
-                field: fieldName,
-                name: fieldName,
-                groupName: 'default',
-                pattern: 'Rate',
-                chart: 'Pie',
-                attrRuntime: 0,
-                attrInvisible: 0,
-                attrSpan: 1,
-                attrIndex: 0
-            });
-
-            // Insert data immediately
-            const chunks = items.map(item => ({
-                name: item.name,
-                value: String(item.value)
-            }));
-
-            await client.insertData(fieldName, chunks);
-            console.log(`Added data: ${label} = ${value}`);
-            console.log(`Data inserted successfully for field '${fieldName}'`);
-        } catch (error) {
-            console.error(`Error inserting data: ${error.message}`);
-            process.exit(1);
-        }
+        // Insert the value directly without checking total
+        await insertPieData(client, fieldName, label, value);
     } else {
         // Query mode: stats-cli pie <name>
-        try {
-            const result = await client.getStatisticByGroup('default');
+        await queryPieData(client, fieldName, options);
+    }
+}
 
-            if (options.json) {
-                console.log(JSON.stringify(result, null, 2));
-                return;
-            }
+/**
+ * Convert pie data to percentages (total = 100)
+ */
+async function convertToPercent(client, fieldName, options) {
+    try {
+        const result = await client.getStatisticByGroup('default');
 
-            // Find the field data
-            if (result && result.data) {
-                const fieldData = result.data.find(d => d.field === fieldName);
-                if (fieldData && fieldData.records) {
-                    console.log(`\n=== Pie Chart: ${fieldName} ===`);
-                    const total = fieldData.records.reduce((sum, r) => sum + parseFloat(r.recordValue || 0), 0);
-                    fieldData.records.forEach(record => {
-                        const value = parseFloat(record.recordValue || 0);
-                        const percent = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                        console.log(`  ${record.recordName}: ${value} (${percent}%)`);
-                    });
-                    console.log(`  Total: ${total.toFixed(2)}`);
-                    console.log();
-                } else {
-                    console.log(`No data found for field '${fieldName}'`);
-                }
+        if (!result || !result.data) {
+            console.error(`No data found for field '${fieldName}'`);
+            return;
+        }
+
+        const fieldData = result.data.find(d => d.field === fieldName);
+        if (!fieldData || !fieldData.records || fieldData.records.length === 0) {
+            console.error(`No data found for field '${fieldName}'`);
+            return;
+        }
+
+        const records = fieldData.records;
+
+        // Calculate current total
+        const currentTotal = records.reduce((sum, r) => sum + parseFloat(r.recordValue || 0), 0);
+
+        console.log(`\n=== Converting to Percentage ===`);
+        console.log(`Field: ${fieldName}`);
+        console.log(`Current total: ${currentTotal.toFixed(2)}`);
+        console.log(`Records: ${records.length}\n`);
+
+        // Calculate ratio to normalize to 100
+        const ratio = 100 / currentTotal;
+
+        // Convert all records to percentages
+        const convertedItems = records.map(record => {
+            const originalValue = parseFloat(record.recordValue);
+            const percentValue = Math.round(originalValue * ratio * 100) / 100; // Round to 2 decimals
+            console.log(`  ${record.recordName}: ${originalValue} → ${percentValue}%`);
+            return {
+                name: record.recordName,
+                value: percentValue
+            };
+        });
+
+        const newTotal = convertedItems.reduce((sum, item) => sum + item.value, 0);
+        console.log(`\nNew total: ${newTotal.toFixed(2)}%`);
+
+        // Ensure field exists
+        await client.ensureFieldExists({
+            field: fieldName,
+            name: fieldName,
+            groupName: 'default',
+            pattern: 'Rate',
+            chart: 'Pie',
+            attrRuntime: 0,
+            attrInvisible: 0,
+            attrSpan: 1,
+            attrIndex: 0
+        });
+
+        // Insert converted data
+        const chunks = convertedItems.map(item => ({
+            name: item.name,
+            value: String(item.value)
+        }));
+
+        await client.insertData(fieldName, chunks);
+
+        console.log(`\n✓ Data converted to percentage successfully for field '${fieldName}'\n`);
+
+        // Show result
+        if (!options.json) {
+            console.log(`=== Pie Chart: ${fieldName} (Percentage) ===`);
+            convertedItems.forEach(item => {
+                console.log(`  ${item.name}: ${item.value.toFixed(2)}%`);
+            });
+            console.log(`  Total: ${newTotal.toFixed(2)}%\n`);
+        } else {
+            console.log(JSON.stringify({ field: fieldName, total: newTotal, data: convertedItems }, null, 2));
+        }
+    } catch (error) {
+        console.error(`Error converting to percentage: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+/**
+ * Insert a single pie data item
+ */
+async function insertPieData(client, fieldName, label, value) {
+    try {
+        // Ensure field exists
+        await client.ensureFieldExists({
+            field: fieldName,
+            name: fieldName,
+            groupName: 'default',
+            pattern: 'Rate',
+            chart: 'Pie',
+            attrRuntime: 0,
+            attrInvisible: 0,
+            attrSpan: 1,
+            attrIndex: 0
+        });
+
+        // Insert data immediately
+        const chunks = [{
+            name: label,
+            value: String(value)
+        }];
+
+        await client.insertData(fieldName, chunks);
+        console.log(`✓ Data inserted successfully for field '${fieldName}'`);
+        console.log(`  ${label} = ${value}\n`);
+    } catch (error) {
+        console.error(`Error inserting data: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+/**
+ * Query pie data
+ */
+async function queryPieData(client, fieldName, options) {
+    try {
+        const result = await client.getStatisticByGroup('default');
+
+        if (options.json) {
+            console.log(JSON.stringify(result, null, 2));
+            return;
+        }
+
+        // Find the field data
+        if (result && result.data) {
+            const fieldData = result.data.find(d => d.field === fieldName);
+            if (fieldData && fieldData.records) {
+                console.log(`\n=== Pie Chart: ${fieldName} ===`);
+                const total = fieldData.records.reduce((sum, r) => sum + parseFloat(r.recordValue || 0), 0);
+                fieldData.records.forEach(record => {
+                    const value = parseFloat(record.recordValue || 0);
+                    const percent = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                    console.log(`  ${record.recordName}: ${value} (${percent}%)`);
+                });
+                console.log(`  Total: ${total.toFixed(2)}`);
+                console.log();
             } else {
                 console.log(`No data found for field '${fieldName}'`);
             }
-        } catch (error) {
-            console.error(`Error querying data: ${error.message}`);
+        } else {
+            console.log(`No data found for field '${fieldName}'`);
         }
+    } catch (error) {
+        console.error(`Error querying data: ${error.message}`);
     }
 }
 
