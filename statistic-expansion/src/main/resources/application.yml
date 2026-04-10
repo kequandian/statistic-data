@@ -73,7 +73,9 @@ mybatis-plus:
 ---
 
 spring:
-  profiles: dev
+  config:
+    activate:
+      on-profile: dev
   datasource:
     url: jdbc:mysql://192.168.3.239:3306/eav?autoReconnect=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=UTC
     username: root
@@ -86,6 +88,7 @@ spring:
     initialize: false
 
 logging:
-  level: debug
+  level:
+    root: debug
   file: logs/trace.log
 ---

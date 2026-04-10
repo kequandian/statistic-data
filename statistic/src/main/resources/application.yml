@@ -77,7 +77,9 @@ genWeb:
 ###################  测试环境的profile  ###################
 ##########################################################
 spring:
-  profiles: test
+  config:
+    activate:
+      on-profile: test
   datasource:
       url: jdbc:h2:mem:sbstatistic;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;
       driver-class-name: org.h2.Driver
@@ -88,7 +90,8 @@ spring:
       data: classpath*:sql/*-data.sql
 
 logging:
-  level: debug
+  level:
+    root: debug
   file: logs/sbstatistic.log
 
 am:
@@ -99,7 +102,9 @@ am:
 ###################  开发环境的profile  ###################
 ##########################################################
 spring:
-  profiles: dev
+  config:
+    activate:
+      on-profile: dev
   datasource:
 #      url: jdbc:mysql://192.168.3.239:3306/eav?autoReconnect=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull
       url: jdbc:mysql://cn1.utools.club:32816/eav?autoReconnect=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull
@@ -111,7 +116,8 @@ spring:
       data: classpath*:sql/*-data.sql
 
 logging:
-  level: debug
+  level:
+    root: debug
   file: logs/statistic.log
 
 am:
@@ -122,7 +128,9 @@ am:
 ###################  正式环境的profile  ###################
 ##########################################################
 spring:
-  profiles: produce
+  config:
+    activate:
+      on-profile: produce
   datasource:
       url: jdbc:mysql://127.0.0.1:3306/datax?autoReconnect=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull
       username: root
@@ -130,7 +138,8 @@ spring:
       filters: log4j,wall,mergeStat
 
 logging:
-  level: warn
+  level:
+    root: warn
   file: logs/sbstatistic.log
 
 am:

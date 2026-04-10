@@ -1,5 +1,6 @@
 package com.jfeat;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -17,6 +18,7 @@ import java.sql.SQLException;
  */
 @SpringBootApplication
 @EnableScheduling
+@MapperScan({"com.jfeat.**.dao", "com.jfeat.crud.**.mapper"})
 public class AmApplication implements CommandLineRunner{
 
     protected final static Logger logger = LoggerFactory.getLogger(AmApplication.class);

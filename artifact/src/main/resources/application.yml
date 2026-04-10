@@ -73,7 +73,9 @@ mybatis-plus:
 ###################  测试环境的profile  ###################
 ##########################################################
 spring:
-  profiles: test
+  config:
+    activate:
+      on-profile: test
   datasource:
       url: jdbc:h2:mem:power;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
       driver-class-name: org.h2.Driver
@@ -89,7 +91,9 @@ spring:
 ###################  开发环境的profile  ###################
 ##########################################################
 spring:
-  profiles: dev
+  config:
+    activate:
+      on-profile: dev
   datasource:
       url: jdbc:mysql://localhost:3306/test?useSSL=false&autoReconnect=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       username: root
@@ -109,7 +113,9 @@ spring:
 ###################  产生环境的profile  ###################
 ##########################################################
 spring:
-  profiles: produce
+  config:
+    activate:
+      on-profile: produce
   datasource:
       url: jdbc:mysql://172.17.0.1:3306/test?useSSL=false&autoReconnect=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       username: root
