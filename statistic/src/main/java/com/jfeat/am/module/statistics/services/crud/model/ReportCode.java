@@ -1,7 +1,5 @@
 package com.jfeat.am.module.statistics.services.crud.model;
 
-import org.apache.xmlbeans.impl.xb.xsdschema.Public;
-
 import static com.jfeat.am.module.statistics.services.crud.impl.ExtendedStatisticsImpl.DEFAULT_EXCEED_TIME;
 
 public class ReportCode {

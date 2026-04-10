@@ -22,12 +22,12 @@ import java.io.Serializable;
 public class StatisticsMeta extends Model<StatisticsMeta> {
 
     @TableField(exist = false)
-    private com.alibaba.fastjson.JSONObject extra;
+    private com.alibaba.fastjson2.JSONObject extra;
 
-    public com.alibaba.fastjson.JSONObject getExtra() {
+    public com.alibaba.fastjson2.JSONObject getExtra() {
         return extra;
     }
-    public void setExtra(com.alibaba.fastjson.JSONObject extra) {
+    public void setExtra(com.alibaba.fastjson2.JSONObject extra) {
         this.extra = extra;
     }
 

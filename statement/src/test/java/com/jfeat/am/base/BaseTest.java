@@ -1,6 +1,6 @@
 package com.jfeat.am.base;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Created by vincenthuang on 24/05/2018.

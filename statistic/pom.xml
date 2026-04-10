@@ -38,7 +38,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <crud-plus.version>21.0.0</crud-plus.version>
         <jwt-core.version>21.0.0</jwt-core.version>
-        <zero-io-core.version>0.0.4</zero-io-core.version>
     </properties>
 
     <dependencies>
@@ -54,12 +53,6 @@
         </dependency>
 
         <!-- zero io  -->
-        <dependency>
-            <groupId>com.jfeat</groupId>
-            <artifactId>zero-io-core</artifactId>
-            <version>${zero-io-core.version}</version>
-        </dependency>
-
         <!-- MySQL connector (version managed by plat-parent) -->
         <dependency>
             <groupId>mysql</groupId>

@@ -4,27 +4,27 @@ import com.jfeat.AmApplication;
 import com.jfeat.am.module.statement.services.statistics.*;
 import com.jfeat.am.module.statement.services.statistics.route.StatisticRouteData;
 import com.jfeat.am.module.statement.services.statistics.service.GeneralStatisticService;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
 
 @ActiveProfiles(profiles = "test")
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = AmApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @EnableAutoConfiguration
 @Transactional
 public class GeneralStaticServiceTest {
 
-    Logger logger = (Logger) LoggerFactory.getLogger(GeneralStaticServiceTest.class.getSimpleName());
+    Logger logger = LoggerFactory.getLogger(GeneralStaticServiceTest.class.getSimpleName());
 
     @Autowired
     private GeneralStatisticService generalStatisticService;

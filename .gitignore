@@ -15,4 +15,5 @@ LOG**
 .classpath
 .factorypath
 config/
-node_modules/
+node_modules/# Temporary backup files created on 2026-04-10
+*.java.bak
