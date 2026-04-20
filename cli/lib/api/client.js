@@ -342,6 +342,108 @@ class StatsAPIClient {
             throw error;
         }
     }
+
+    // ==================== Meta API ====================
+
+    /**
+     * Get meta by field name
+     * @param {string} fieldName - Name of the field
+     * @returns {Promise<Object>} Meta record or null
+     */
+    async getMetaByField(fieldName) {
+        try {
+            const result = await this._request('GET', '/api/adm/stat/meta', {
+                params: { field: fieldName, pageSize: 1 }
+            });
+            const records = result?.data?.records || result?.records || [];
+            return records.length > 0 ? records[0] : null;
+        } catch (error) {
+            if (error.statusCode === 404) {
+                return null;
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Create a new meta record
+     * @param {Object} metaData - Meta data to create
+     * @returns {Promise<Object>} Created meta record
+     */
+    async createMeta(metaData) {
+        return this._request('POST', '/api/adm/stat/meta', {
+            body: JSON.stringify(metaData)
+        });
+    }
+
+    /**
+     * Update an existing meta record
+     * @param {number} metaId - Meta record ID
+     * @param {Object} metaData - Meta data to update
+     * @returns {Promise<Object>} Updated meta record
+     */
+    async updateMeta(metaId, metaData) {
+        return this._request('PUT', `/api/adm/stat/meta/${metaId}`, {
+            body: JSON.stringify(metaData)
+        });
+    }
+
+    /**
+     * Ensure meta exists, create or update if needed
+     * @param {string} fieldName - Name of the field
+     * @param {string} querySql - SQL query string
+     * @param {Object} options - Additional meta options (title, type, etc.)
+     * @returns {Promise<number>} Meta ID
+     */
+    async ensureMetaExists(fieldName, querySql, options = {}) {
+        try {
+            // Check if meta already exists
+            const existingMeta = await this.getMetaByField(fieldName);
+
+            const metaData = {
+                field: fieldName,
+                querySql: querySql,
+                title: options.title || fieldName,
+                type: options.type || '数量',
+                pattern: options.pattern || 'Gauge',
+                chart: options.chart || 'Total',
+                ...options
+            };
+
+            if (existingMeta) {
+                // Update existing meta
+                if (this.verbose) {
+                    console.error(`[DEBUG] Updating meta for field '${fieldName}'`);
+                }
+                await this.updateMeta(existingMeta.id, metaData);
+                return existingMeta.id;
+            } else {
+                // Create new meta
+                if (this.verbose) {
+                    console.error(`[DEBUG] Creating meta for field '${fieldName}'`);
+                }
+                const result = await this.createMeta(metaData);
+                return result?.data?.id || result?.id;
+            }
+        } catch (error) {
+            console.error(`Error ensuring meta exists: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Set field runtime attribute to enable/disable meta query
+     * @param {number} fieldId - Field ID
+     * @param {number} attrRuntime - Runtime attribute (0 or 1)
+     * @returns {Promise<Object>} Update result
+     */
+    async setFieldRuntime(fieldId, attrRuntime = 1) {
+        // This requires updating the field with attrRuntime
+        // We need to use the field update endpoint
+        return this._request('PUT', `/api/cfg/stat/fields/${fieldId}`, {
+            body: JSON.stringify({ attrRuntime })
+        });
+    }
 }
 
 module.exports = { StatsAPIClient };

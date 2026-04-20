@@ -14,11 +14,13 @@ GAUGE COMMAND - 仪表盘数据管理
 
 USAGE:
   statistic-cli gauge <field> add <name> with <value>
+  statistic-cli gauge <field> add <name> meta <sql>
   statistic-cli gauge <field> del <name>
   statistic-cli gauge <field> [--url]
 
 SUBCOMMANDS:
-  add <name> with <value>        添加指标数据
+  add <name> with <value>        添加指标数据（静态值）
+  add <name> meta <sql>          添加指标数据（使用 SQL 查询）
   del <name>                     删除指标数据
   (no args)                      查询仪表盘数据
 
@@ -29,8 +31,14 @@ DESCRIPTION:
   简单的仪表盘：单个 field + 多个 records
   不需要 groups，直接用 field 作为仪表盘名称
 
+  当使用 meta 参数时，系统会：
+  1. 在 StatisticsMeta 表中创建/更新记录，存储 SQL 查询
+  2. 设置 field 的 attrRuntime = 1，启用实时查询
+  3. 查询时优先使用 meta SQL，静态值作为备用
+
 EXAMPLES:
   statistic-cli gauge alarm add errors with 3
+  statistic-cli gauge alarm add errors meta "SELECT count(*) as errors FROM alarm_table WHERE status='active'"
   statistic-cli gauge alarm add warnings with 5
   statistic-cli gauge alarm del warnings
   statistic-cli gauge alarm
@@ -59,12 +67,76 @@ async function handleGauge(args, options) {
         return;
     }
 
-    // Check if adding data (add <name> with <value>)
+    // Check if adding data (add <name> with <value> OR add <name> meta <sql>)
     const addIndex = args.indexOf('add');
     const withIndex = args.indexOf('with');
+    const metaIndex = args.indexOf('meta');
     const delIndex = args.indexOf('del');
 
-    if (addIndex !== -1 && withIndex !== -1 && addIndex < withIndex) {
+    // Handle meta mode: statistic-cli gauge alarm add errors meta "SELECT ..."
+    if (addIndex !== -1 && metaIndex !== -1 && addIndex < metaIndex) {
+        const recordName = args[addIndex + 1];
+        // Collect all remaining args as the SQL query
+        const sqlArgs = args.slice(metaIndex + 1);
+        const sqlQuery = sqlArgs.join(' ');
+
+        if (!recordName || !sqlQuery) {
+            console.error('Usage: statistic-cli gauge <field> add <name> meta <sql>');
+            process.exit(1);
+        }
+
+        try {
+            // Ensure field exists
+            const fieldId = await client.ensureFieldExists({
+                field: fieldName,
+                name: fieldName,
+                groupName: fieldName,
+                pattern: 'Gauge',
+                chart: 'Total',
+                attrRuntime: 0,
+                attrInvisible: 0,
+                attrSpan: 1,
+                attrIndex: 0
+            });
+
+            // Set pattern to Gauge for gauge dashboard
+            await client.updateFieldPattern(fieldId, 'Gauge');
+            if (options.verbose) {
+                console.error(`[DEBUG] Set pattern to 'Gauge' for field '${fieldName}'`);
+            }
+
+            // Create/update meta with SQL query
+            // The SQL query should return a result with column name matching recordName
+            // Example: SELECT count(*) as errors FROM table
+            await client.ensureMetaExists(fieldName, sqlQuery, {
+                title: fieldName,
+                type: '数量',
+                pattern: 'Gauge',
+                chart: 'Total'
+            });
+
+            // Set attrRuntime to 1 to enable meta query
+            await client.setFieldRuntime(fieldId, 1);
+            if (options.verbose) {
+                console.error(`[DEBUG] Set attrRuntime to 1 for field '${fieldName}'`);
+            }
+
+            // Also insert a placeholder record (value will be overridden by meta query)
+            const chunks = [{
+                name: recordName,
+                value: '0'  // Placeholder value, meta query will provide actual value
+            }];
+
+            await client.insertData(fieldName, chunks);
+            console.log(`✓ Added: ${recordName} (with meta SQL)`);
+            if (options.verbose) {
+                console.error(`[DEBUG] SQL: ${sqlQuery}`);
+            }
+        } catch (error) {
+            console.error(`✗ Error setting up meta query: ${error.message}`);
+            process.exit(1);
+        }
+    } else if (addIndex !== -1 && withIndex !== -1 && addIndex < withIndex) {
         // Adding data: statistic-cli gauge alarm add errors with 3
         const recordName = args[addIndex + 1];
         const value = args[withIndex + 1];
