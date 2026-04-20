@@ -1,5 +1,6 @@
 package com.jfeat.am.module.statistics.services.cache.impl;
 
+import com.jfeat.am.module.statistics.services.cache.CacheTtlCalculator;
 import com.jfeat.am.module.statistics.services.cache.StatisticCacheService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,8 +12,13 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Redis-based implementation of StatisticCacheService
+ *
  * Cache keys format: stat:{field}:{pattern}:{identifier}
- * TTL: 5 minutes (configurable)
+ *
+ * TTL Strategy:
+ * - Daily expiration at 4:00 AM (next occurrence)
+ * - Maximum TTL: 24 hours
+ * - Configurable via system property: statistic.cache.daily-expiration
  */
 @Service("redisStatisticCacheService")
 public class RedisStatisticCacheService implements StatisticCacheService {
@@ -20,7 +26,7 @@ public class RedisStatisticCacheService implements StatisticCacheService {
     protected static final Logger logger = LoggerFactory.getLogger(RedisStatisticCacheService.class);
 
     private static final String CACHE_PREFIX = "stat:";
-    private static final long DEFAULT_TTL_MINUTES = 5;
+    private static final long DEFAULT_FALLBACK_TTL_MINUTES = 5;
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
@@ -59,8 +65,24 @@ public class RedisStatisticCacheService implements StatisticCacheService {
     public void cacheData(String field, String pattern, String identifier, Object data) {
         String key = generateCacheKey(field, pattern, identifier);
         try {
-            redisTemplate.opsForValue().set(key, data, DEFAULT_TTL_MINUTES, TimeUnit.MINUTES);
-            logger.debug("Cached data for key: {}, TTL: {} minutes", key, DEFAULT_TTL_MINUTES);
+            long ttl;
+            String ttlDescription;
+
+            // Use smart TTL calculation if daily expiration is enabled
+            if (CacheTtlCalculator.isDailyExpirationEnabled()) {
+                ttl = CacheTtlCalculator.calculateTtlInSeconds();
+                ttlDescription = CacheTtlCalculator.getExpirationDescription();
+
+                logger.debug("Cached data for key: {}, expires at 4:00 AM ({})", key, ttlDescription);
+            } else {
+                // Fallback to simple TTL
+                ttl = TimeUnit.MINUTES.toSeconds(DEFAULT_FALLBACK_TTL_MINUTES);
+                ttlDescription = DEFAULT_FALLBACK_TTL_MINUTES + " minutes";
+
+                logger.debug("Cached data for key: {}, TTL: {}", key, ttlDescription);
+            }
+
+            redisTemplate.opsForValue().set(key, data, ttl, TimeUnit.SECONDS);
         } catch (Exception e) {
             logger.warn("Failed to cache data for key: {}", key, e);
         }

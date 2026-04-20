@@ -1,5 +1,6 @@
 package com.jfeat.am.module.statistics.api;
 
+import com.jfeat.am.module.statistics.services.cache.CacheTtlCalculator;
 import com.jfeat.am.module.statistics.services.cache.StatisticCacheProxy;
 import com.jfeat.crud.base.tips.SuccessTip;
 import com.jfeat.crud.base.tips.Tip;
@@ -45,7 +46,11 @@ public class StatisticsCacheEndpoint {
     @ApiOperation("获取缓存状态")
     @GetMapping("/status")
     public Tip getCacheStatus() {
-        return SuccessTip.create(new CacheStatus(statisticCacheProxy.isCacheEnabled()));
+        return SuccessTip.create(new CacheStatus(
+                statisticCacheProxy.isCacheEnabled(),
+                CacheTtlCalculator.isDailyExpirationEnabled(),
+                CacheTtlCalculator.getExpirationDescription()
+        ));
     }
 
     /**
@@ -53,13 +58,25 @@ public class StatisticsCacheEndpoint {
      */
     public static class CacheStatus {
         private final boolean enabled;
+        private final boolean dailyExpirationEnabled;
+        private final String expirationInfo;
 
-        public CacheStatus(boolean enabled) {
+        public CacheStatus(boolean enabled, boolean dailyExpirationEnabled, String expirationInfo) {
             this.enabled = enabled;
+            this.dailyExpirationEnabled = dailyExpirationEnabled;
+            this.expirationInfo = expirationInfo;
         }
 
         public boolean isEnabled() {
             return enabled;
+        }
+
+        public boolean isDailyExpirationEnabled() {
+            return dailyExpirationEnabled;
+        }
+
+        public String getExpirationInfo() {
+            return expirationInfo;
         }
     }
 }
